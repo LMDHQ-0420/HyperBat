@@ -142,3 +142,25 @@ class GMANet(nn.Module):
         # 3. 预测 (通常这部分是 Frozen 的)
         soh = self.head(aligned)
         return soh
+    
+    def apply_lora(self, feat, param_A, param_B, log_s):
+        """
+        实现端到端推理的核心逻辑
+        feat: Encoder 提取的特征 [Batch, 64]
+        param_A: [Batch, 64, rank]
+        param_B: [Batch, rank, 32]
+        log_s: [Batch, 1] 缩放因子的对数
+        """
+        # 1. 还原物理强度 s = exp(log_s)
+        s = torch.exp(log_s).view(-1, 1, 1) # [Batch, 1, 1]
+        
+        # 2. 计算动态权重矩阵 W = s * (A @ B)
+        # param_A: [B, 64, r], param_B: [B, r, 32]
+        W = s * torch.bmm(param_A, param_B) # [B, 64, 32]
+        
+        # 3. 特征对齐: [B, 1, 64] @ [B, 64, 32] -> [B, 1, 32]
+        aligned = torch.bmm(feat.unsqueeze(1), W).squeeze(1)
+        
+        # 4. 预测 SOH
+        soh = self.head(aligned)
+        return soh
