@@ -1,0 +1,24 @@
+path:
+    raw_dir: data/raw
+    preprocessed_dir: data/preprocessed
+    labeled_dir: data/labeled
+    weights_dir: data/weights
+    results_dir: results
+
+train_ratio:
+    CALCE: 0.0
+    HNEI: 0.0
+    ZNion: 0.0
+    NAion: 0.0
+    HUST: 0.8
+    MATR: 0.8
+    CALB: 1.0
+    MICH: 1.0
+    MICH-EXP: 1.0
+    SDU: 1.0
+    Stanford: 1.0
+    XJTU: 1.0
+    RWTH: 1.0
+    Tongji: 1.0
+    ISU-ILCC: 1.0
+
