@@ -335,9 +335,9 @@ if __name__ == "__main__":
     logging.info(f"Slide mode: {slide} | window_size={window_size}, stride={stride}")
 
     labeled_dir = Path(config.path.labeled_dir)
-    result_dir = Path(config.path.results_dir)
+    result_dir = Path(config.path.results_dir) / 'GMANET_results'
     result_dir.mkdir(parents=True, exist_ok=True)
-    pretrained_path = result_dir / 'GMA-NET.pkl'
+    pretrained_path = Path(config.path.results_dir) / 'GMA-NET.pkl'
     if not slide:
         weights_dir = Path(config.path.weights_dir) / 'no_slide'
         result_file_name = 'GMANet_no_slide_test'
