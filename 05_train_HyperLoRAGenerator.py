@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset, Subset
 import argparse
 
 from battery_data import BatteryData
-from model import GMANetPreTrain, AdvancedHyperGen # 假设你已将新模型写入 model.py
+from model import GMANetPreTrain, HyperLoRAGenerator
 
 # ==========================================
 # 1. 基础工具函数
@@ -30,7 +30,7 @@ def load_frozen_encoder(pretrained_path, device):
     return encoder
 
 def build_X_from_cycles(cycles, frozen_encoder, device):
-    """特征提取：保留时序维度 [L, 400] -> [L, 64] 以适配 Transformer"""
+    """特征提取：信号 [N, 400] -> 特征 [N, 64]"""
     if isinstance(cycles, np.ndarray):
         cycles_tensor = torch.from_numpy(cycles).float()
     else:
@@ -38,7 +38,7 @@ def build_X_from_cycles(cycles, frozen_encoder, device):
 
     frozen_encoder.eval()
     with torch.no_grad():
-        # 输出形状 [L, 64]
+        # Batch 处理以提升性能
         feat = frozen_encoder(cycles_tensor.to(device))
     return feat.cpu()
 
@@ -48,8 +48,12 @@ def load_data(weight_path, device, train_dir, local_num_cycles, global_num_cycle
     param_A = weights["param_A"].to(device).float()
     param_B = weights["param_B"].to(device).float()
 
-    # 计算 W 真值 (用于后续高精度监督)
-    target_W = torch.matmul(param_A, param_B) 
+    # 计算归一化 A, B 和 log_scale
+    norm_A = torch.norm(param_A, p="fro")
+    norm_B = torch.norm(param_B, p="fro")
+    A_norm = param_A / (norm_A + eps)
+    B_norm = param_B / (norm_B + eps)
+    log_scale = torch.log(norm_A * norm_B + eps).unsqueeze(0)
 
     # 解析路径获取电池数据
     parts = weight_path.stem.split("_")
@@ -65,38 +69,24 @@ def load_data(weight_path, device, train_dir, local_num_cycles, global_num_cycle
     l_data = battery.cycle_data[start_idx : start_idx + local_num_cycles]
     local_cycles = np.stack([np.asarray(c.labeled_Qc, dtype=np.float32) for c in l_data])
 
-    # 这里不再进行 norm 处理，直接返回原始 A, B 和 计算好的 W
-    return param_A.cpu(), param_B.cpu(), target_W.cpu(), \
+    return A_norm.cpu(), B_norm.cpu(), log_scale.cpu(), \
            torch.tensor(local_cycles), torch.tensor(global_cycles)
 
 # ==========================================
-# 2. 训练相关函数
+# 2. 训练相关函数 (由 Main 调用)
 # ==========================================
 
-def hyper_lora_loss(p_A, p_B, p_s, t_A, t_B, t_W, t_s):
-    """
-    改进的 Loss：增加 W 空间一致性。
-    p_A, p_B: 预测的低秩分解
-    t_W: 标签权重的完整矩阵 (A_true @ B_true)
-    """
+def hyper_lora_loss(pred_A, pred_B, pred_log_s, target_A, target_B, target_log_s):
+    """独立的解耦 Loss 计算函数"""
     criterion = nn.MSELoss()
-    
-    # 1. 组件级 Loss (A, B 的数值逼近)
-    loss_A = criterion(p_A, t_A)
-    loss_B = criterion(p_B, t_B)
-    
-    # 2. 结构级 Loss (W = A@B 的整体逼近) - 达到 0.5% 的核心
-    p_W = torch.bmm(p_A, p_B)
-    loss_W = criterion(p_W, t_W)
-    
-    # 3. 尺度 Loss
-    loss_S = criterion(p_s, t_s)
-    
-    # 组合权重：W 空间的准确性对 SOH 预测最直接，给予高权重
-    total_loss = 1.0 * (loss_A + loss_B) + 5.0 * loss_W + 10.0 * loss_S
-    return total_loss, (loss_A.item(), loss_B.item(), loss_W.item())
+    loss_A = criterion(pred_A, target_A)
+    loss_B = criterion(pred_B, target_B)
+    loss_S = criterion(pred_log_s, target_log_s)
+    total_loss = loss_A + loss_B + 10.0 * loss_S
+    return total_loss, (loss_A.item(), loss_B.item(), loss_S.item())
 
 class HyperCacheDataset(Dataset):
+    """带缓存的 Dataset，防止训练时重复跑 Encoder"""
     def __init__(self, data_list):
         self.data_list = data_list
     def __len__(self):
@@ -105,36 +95,47 @@ class HyperCacheDataset(Dataset):
         return self.data_list[idx]
 
 def prepare_hyper_dataset(files, encoder, train_dir, local_num, global_num, device):
+    """预计算所有特征并打包为 Dataset"""
     cached_data = []
     for file in tqdm(files, desc="Pre-computing Features"):
-        A_t, B_t, W_t, l_cyc, g_cyc = load_data(file, device, train_dir, local_num, global_num)
-        feat_l = build_X_from_cycles(l_cyc, encoder, device) # [L, 64]
-        feat_g = build_X_from_cycles(g_cyc, encoder, device) # [G, 64]
+        A_n, B_n, l_s, l_cyc, g_cyc = load_data(file, device, train_dir, local_num, global_num)
         
-        # log_s 标签：从 W_t 的 Frobenius 范数中提取（保持与推理逻辑一致）
-        target_s = torch.log(torch.norm(W_t) + 1e-8).unsqueeze(0)
+        # 提取特征
+        feat_l = build_X_from_cycles(l_cyc, encoder, device)
+        feat_g = build_X_from_cycles(g_cyc, encoder, device)
         
-        cached_data.append((feat_g, feat_l, A_t, B_t, W_t, target_s))
+        cached_data.append((feat_g, feat_l, A_n, B_n, l_s))
     return HyperCacheDataset(cached_data)
 
-def train(train_loader, model_save_path, device, epochs=5000, early_stop_patience=100):
+def train(train_loader, model_save_path, device, epochs=10000, early_stop_patience=50):
+    """
+    超网络训练逻辑：
+    1) 在函数内完成 K 折交叉验证
+    2) 在 loss 中加入 L2 正则化
+    3) 学习率衰减与早停均基于 CV 均值验证损失
+    """
     full_dataset = train_loader.dataset
     num_samples = len(full_dataset)
-    num_folds = min(5, num_samples)
-    batch_size = 32 # Transformer 建议小 batch 以增强泛化
-    lambda_l2 = 1e-5
+    if num_samples < 2:
+        raise ValueError("训练样本数不足，至少需要 2 个样本以执行交叉验证。")
 
+    # 内置超参数（按用户要求全部放在 train 函数中，不新增 argparse 参数）
+    num_folds = min(5, num_samples)
+    batch_size = train_loader.batch_size or 64
+    lambda_l2 = 1e-6
+
+    # 构建 K 折索引
     all_indices = np.arange(num_samples)
     rng = np.random.default_rng(42)
     rng.shuffle(all_indices)
     fold_indices = np.array_split(all_indices, num_folds)
 
-    # 初始化新模型 (AdvancedHyperGen)
-    model = AdvancedHyperGen(feature_dim=64, rank=4).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-4)
+    model = HyperLoRAGenerator(feature_dim=64, rank=4).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=0.0)
     
+    # 学习率衰减：当验证集 loss 20 个 epoch 不下降时，降低 LR
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=30, min_lr=1e-6
+        optimizer, mode='min', factor=0.5, patience=20
     )
 
     best_val_loss = float('inf')
@@ -144,64 +145,85 @@ def train(train_loader, model_save_path, device, epochs=5000, early_stop_patienc
         fold_train_losses = []
         fold_val_losses = []
 
+        # 每个 epoch 遍历 K 折：每折用 K-1 份训练、1 份验证
         for k in range(num_folds):
             val_idx = fold_indices[k]
             train_idx = np.concatenate([fold_indices[i] for i in range(num_folds) if i != k])
+
             train_subset = Subset(full_dataset, train_idx.tolist())
             val_subset = Subset(full_dataset, val_idx.tolist())
+
             fold_train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
             fold_val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False)
 
-            # --- 训练阶段 ---
+            # --- 该折训练 ---
             model.train()
-            curr_train_loss = 0.0
-            for feat_g, feat_l, t_A, t_B, t_W, t_s in fold_train_loader:
+            train_loss = 0.0
+            train_batches = 0
+            for feat_g, feat_l, t_A, t_B, t_s in fold_train_loader:
                 feat_g, feat_l = feat_g.to(device), feat_l.to(device)
-                t_A, t_B, t_W, t_s = t_A.to(device), t_B.to(device), t_W.to(device), t_s.to(device)
+                t_A, t_B, t_s = t_A.to(device), t_B.to(device), t_s.to(device)
 
                 optimizer.zero_grad()
                 p_A, p_B, p_s = model(feat_g, feat_l)
 
-                base_loss, _ = hyper_lora_loss(p_A, p_B, p_s, t_A, t_B, t_W, t_s)
-                
-                # 正交性惩罚 (参考 PINN 论文，确保生成的 A, B 具有物理可解释性)
-                orth_loss = torch.norm(torch.bmm(p_A.transpose(1,2), p_A) - torch.eye(4, device=device))
-                
-                loss = base_loss + 0.1 * orth_loss
+                base_loss, _ = hyper_lora_loss(p_A, p_B, p_s, t_A, t_B, t_s)
+                l2_penalty = torch.zeros(1, device=device)
+                for p in model.parameters():
+                    l2_penalty = l2_penalty + torch.sum(p.pow(2))
+                loss = base_loss + lambda_l2 * l2_penalty
+
                 loss.backward()
                 optimizer.step()
-                curr_train_loss += loss.item()
 
-            fold_train_losses.append(curr_train_loss / len(fold_train_loader))
+                train_loss += loss.item()
+                train_batches += 1
 
-            # --- 验证阶段 ---
+            fold_train_losses.append(train_loss / max(train_batches, 1))
+
+            # --- 该折验证 ---
             model.eval()
-            curr_val_loss = 0.0
+            val_loss = 0.0
+            val_batches = 0
             with torch.no_grad():
-                for feat_g, feat_l, t_A, t_B, t_W, t_s in fold_val_loader:
+                for feat_g, feat_l, t_A, t_B, t_s in fold_val_loader:
                     feat_g, feat_l = feat_g.to(device), feat_l.to(device)
-                    t_A, t_B, t_W, t_s = t_A.to(device), t_B.to(device), t_W.to(device), t_s.to(device)
+                    t_A, t_B, t_s = t_A.to(device), t_B.to(device), t_s.to(device)
+
                     p_A, p_B, p_s = model(feat_g, feat_l)
-                    v_loss, _ = hyper_lora_loss(p_A, p_B, p_s, t_A, t_B, t_W, t_s)
-                    curr_val_loss += v_loss.item()
-            fold_val_losses.append(curr_val_loss / len(fold_val_loader))
+                    v_loss, _ = hyper_lora_loss(p_A, p_B, p_s, t_A, t_B, t_s)
+                    val_loss += v_loss.item()
+                    val_batches += 1
 
-        avg_train_loss = np.mean(fold_train_losses)
-        avg_val_loss = np.mean(fold_val_losses)
+            fold_val_losses.append(val_loss / max(val_batches, 1))
 
-        if (epoch + 1) % 10 == 0:
-            logging.info(f"Epoch {epoch+1} | Train: {avg_train_loss:.6f} | Val: {avg_val_loss:.6f} | LR: {optimizer.param_groups[0]['lr']:.2e}")
+        avg_train_loss = float(np.mean(fold_train_losses))
+        avg_val_loss = float(np.mean(fold_val_losses))
 
+        # 打印进度
+        if (epoch + 1) % 5 == 0:
+            logging.info(
+                f"Epoch {epoch+1} | CV-Train Loss: {avg_train_loss:.6f} | CV-Val Loss: {avg_val_loss:.6f}"
+            )
+
+        # 学习率调度
         scheduler.step(avg_val_loss)
 
-        if avg_val_loss < best_val_loss - 1e-7:
+        # 早停判断
+        if avg_val_loss < best_val_loss - 1e-6:
             best_val_loss = avg_val_loss
             no_improve = 0
             torch.save(model.state_dict(), model_save_path)
+            logging.info(f"New best model saved at epoch {epoch+1}")
         else:
             no_improve += 1
+
         if no_improve >= early_stop_patience:
+            logging.info(f"Early stopping at epoch {epoch+1}. Best Val Loss: {best_val_loss:.6f}")
             break
+
+    logging.info("Training process completed.")
+
 
 # ==========================================
 # 4. 测试相关函数 (权重生成准确率测试)
@@ -214,7 +236,7 @@ def test(hyper_model_path, model_path, weights_dir, labeled_dir, device, local_n
     """
     # 1. 加载模型
     encoder = load_frozen_encoder(model_path, device)
-    hyper_gen = AdvancedHyperGen(feature_dim=64, rank=4).to(device)
+    hyper_gen = HyperLoRAGenerator(feature_dim=64, rank=4).to(device)
     hyper_gen.load_state_dict(torch.load(hyper_model_path, map_location=device))
     hyper_gen.eval()
 
@@ -316,7 +338,6 @@ if __name__ == "__main__":
         hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_{args.local_num_cycles}_{args.global_num_cycles}_wsize_{args.window_size}_stride_{args.stride}.pkl'
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # A. 训练宏观逻辑
     if args.do_train:
         logging.info("--- Starting HyperLoRA Training ---")
