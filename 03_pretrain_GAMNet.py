@@ -75,12 +75,98 @@ def read_dataset(train_dir):
 
 
 
-def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5):
+# def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5):
 
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+#     # 1. 创建 Sampler (关键修改)
+#     # replacement=True 表示允许重复采样 (这是平衡数据的关键)
+#     sampler = WeightedRandomSampler(
+#         weights=samples_weights,
+#         num_samples=len(samples_weights),
+#         replacement=True
+#     )
+
+#     # 2. 创建 DataLoader
+#     train_ds = TensorDataset(X, y)
+#     train_loader = DataLoader(
+#         train_ds, 
+#         batch_size=128,      # 建议调大一点，比如 64 或 128，让每个 Batch 更容易混入少样本
+#         sampler=sampler,    # 注入采样器
+#         shuffle=False       # 必须为 False ！！！
+#     )
+
+#     model = GMANetPreTrain().to(device)
+    
+#     criterion = nn.MSELoss()
+#     optimizer = torch.optim.Adam(
+#         model.parameters(),
+#         lr=1e-3,
+#         weight_decay=l2_weight_decay,
+#     )
+#     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+#         optimizer,
+#         mode='min',
+#         factor=0.1,
+#         patience=20,
+#         threshold=1e-4,
+#         min_lr=1e-6,
+#     )
+
+#     # 训练，最多 10000 个 epoch，包含学习率衰减与早停
+#     max_epochs = 10000
+#     best_loss = float('inf')
+#     no_improve = 0
+#     early_stop_patience = 50  # 连续 50 个 epoch 无提升则早停
+
+#     for _ in range(max_epochs):
+#         model.train()
+#         running_loss = 0.0
+#         batch_count = 0
+#         for xb, yb in train_loader:
+#             xb, yb = xb.to(device), yb.to(device)
+           
+#             optimizer.zero_grad()
+#             pred = model(xb)
+#             loss = criterion(pred, yb)
+            
+#             loss.backward()
+#             optimizer.step()
+#             running_loss += loss.item()
+#             batch_count += 1
+
+#         epoch_loss = running_loss / max(batch_count, 1)
+
+#         logging.info(f'Epoch {_+1}/{max_epochs}, Loss: {epoch_loss:.6f}')
+
+#         if epoch_loss < best_loss - 1e-6:
+#             best_loss = epoch_loss
+#             no_improve = 0
+#             logging.info('Best model so far.')
+#         else:
+#             no_improve += 1
+
+#         # 调度学习率（基于 loss 的 plateau）
+#         scheduler.step(epoch_loss)
+
+#         # 早停判断
+#         if no_improve >= early_stop_patience:
+#             logging.info('Early stopping: no improvement for patience limit.')
+#             break
+
+#     # 训练完成后保存一次模型权重
+#     torch.save(model.state_dict(), model_path)
+#     logging.info(f'Training completed. Model weights saved to {model_path}.')
+
+
+def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5, lambda_orth_p1=0.01):
+    """
+    Args:
+        lambda_orth_p1: 正交化损失的系数，建议 0.01 ~ 0.1
+    """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # 1. 创建 Sampler (关键修改)
-    # replacement=True 表示允许重复采样 (这是平衡数据的关键)
+    # 1. 创建 Sampler
     sampler = WeightedRandomSampler(
         weights=samples_weights,
         num_samples=len(samples_weights),
@@ -91,12 +177,15 @@ def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5):
     train_ds = TensorDataset(X, y)
     train_loader = DataLoader(
         train_ds, 
-        batch_size=128,      # 建议调大一点，比如 64 或 128，让每个 Batch 更容易混入少样本
-        sampler=sampler,    # 注入采样器
-        shuffle=False       # 必须为 False ！！！
+        batch_size=128,
+        sampler=sampler,
+        shuffle=False
     )
 
     model = GMANetPreTrain().to(device)
+    
+    # --- 建议：手动进行正交初始化，给模型一个好的起点 ---
+    nn.init.orthogonal_(model.temp_connector.weight)
     
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(
@@ -104,6 +193,7 @@ def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5):
         lr=1e-3,
         weight_decay=l2_weight_decay,
     )
+    
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         mode='min',
@@ -119,47 +209,63 @@ def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5):
     no_improve = 0
     early_stop_patience = 50  # 连续 50 个 epoch 无提升则早停
 
-    for _ in range(max_epochs):
+    for epoch in range(max_epochs):
         model.train()
-        running_loss = 0.0
+        running_mse = 0.0
+        running_orth = 0.0
         batch_count = 0
+        
         for xb, yb in train_loader:
             xb, yb = xb.to(device), yb.to(device)
            
             optimizer.zero_grad()
-            pred = model(xb)
-            loss = criterion(pred, yb)
             
-            loss.backward()
+            # 1. 前向预测
+            pred = model(xb)
+            mse_loss = criterion(pred, yb)
+            
+            # 2. --- 新增：正交约束逻辑 ---
+            # 获取权重 [32, 64]
+            W = model.temp_connector.weight 
+            # 计算 W * W.T (得到 32x32 矩阵)
+            WWt = torch.mm(W, W.t())
+            # 目标是单位阵 I
+            I = torch.eye(32, device=device)
+            # 计算 MSE 距离
+            orth_loss = torch.mean((WWt - I)**2)
+            
+            # 3. 组合总损失
+            total_loss = mse_loss + lambda_orth_p1 * orth_loss
+            
+            total_loss.backward()
             optimizer.step()
-            running_loss += loss.item()
+            
+            running_mse += mse_loss.item()
+            running_orth += orth_loss.item()
             batch_count += 1
 
-        epoch_loss = running_loss / max(batch_count, 1)
+        epoch_mse = running_mse / max(batch_count, 1)
+        epoch_orth = running_orth / max(batch_count, 1)
+        epoch_total = epoch_mse + lambda_orth_p1 * epoch_orth
 
-        logging.info(f'Epoch {_+1}/{max_epochs}, Loss: {epoch_loss:.6f}')
+        logging.info(f'Epoch {epoch+1}, Total: {epoch_total:.6f}, MSE: {epoch_mse:.6f}, Orth: {epoch_orth:.6f}')
 
-        if epoch_loss < best_loss - 1e-6:
-            best_loss = epoch_loss
+        # 注意：早停和调度器建议基于 epoch_total 或 epoch_mse
+        if epoch_total < best_loss - 1e-6:
+            best_loss = epoch_total
             no_improve = 0
-            logging.info('Best model so far.')
+            torch.save(model.state_dict(), model_path) # 及时保存最优
+            logging.info('Best model saved.')
         else:
             no_improve += 1
 
-        # 调度学习率（基于 loss 的 plateau）
-        scheduler.step(epoch_loss)
+        scheduler.step(epoch_total)
 
-        # 早停判断
         if no_improve >= early_stop_patience:
-            logging.info('Early stopping: no improvement for patience limit.')
+            logging.info('Early stopping.')
             break
 
-    # 训练完成后保存一次模型权重
-    torch.save(model.state_dict(), model_path)
-    logging.info(f'Training completed. Model weights saved to {model_path}.')
-
-
-
+    logging.info(f'Training completed.')
 
 def test(model_path, labeled_dir, test_result_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -169,34 +275,28 @@ def test(model_path, labeled_dir, test_result_path):
     model.load_state_dict(state)
     model.eval()
 
-    # 准备 CSV
+    # 准备 CSV - 加入 mape 标题
     test_result_path.parent.mkdir(parents=True, exist_ok=True)
-    header = ['folder', 'battery_count', 'mse', 'mae', 'rmse']
+    header = ['folder', 'battery_count', 'mse', 'mae', 'rmse', 'mape']
     need_header = not test_result_path.exists()
+    
     with open(test_result_path, 'a') as f:
         if need_header:
             f.write(','.join(header) + '\n')
 
-        # 遍历以 test 开头的文件夹
         for subdir in tqdm(sorted(labeled_dir.iterdir()), desc='Testing'):
             if not subdir.is_dir() or not subdir.name.startswith('test'):
                 continue
 
             files = sorted(subdir.glob('*.pkl'))
-
             battery_count = len(files)
             preds_all = []
             trues_all = []
 
             for file in files:
                 battery = BatteryData.load(str(file))
-                qc_list = []
-                soh_list = []
-                for c in battery.cycle_data:
-                    qc = np.asarray(c.labeled_Qc, dtype=np.float32)
-                    soh = float(c.labeled_soh)
-                    qc_list.append(qc)
-                    soh_list.append(soh)
+                qc_list = [np.asarray(c.labeled_Qc, dtype=np.float32) for c in battery.cycle_data]
+                soh_list = [float(c.labeled_soh) for c in battery.cycle_data]
 
                 X = torch.tensor(np.stack(qc_list), dtype=torch.float32).to(device)
                 with torch.no_grad():
@@ -206,11 +306,17 @@ def test(model_path, labeled_dir, test_result_path):
 
             preds_arr = np.asarray(preds_all, dtype=np.float32)
             trues_arr = np.asarray(trues_all, dtype=np.float32)
+            
+            # --- 指标计算 ---
             mse = float(np.mean((preds_arr - trues_arr) ** 2))
             mae = float(np.mean(np.abs(preds_arr - trues_arr)))
             rmse = float(np.sqrt(mse))
+            
+            # 计算 MAPE: 注意 SOH 不能为 0（通常电池 SOH > 0.6）
+            # 结果以百分比表示，例如 0.01 表示 1%
+            mape = float(np.mean(np.abs((trues_arr - preds_arr) / trues_arr)))
 
-            f.write(f"{subdir.name},{battery_count},{mse:.6f},{mae:.6f},{rmse:.6f}\n")
+            f.write(f"{subdir.name},{battery_count},{mse:.6f},{mae:.6f},{rmse:.6f},{mape:.6f}\n")
     
 
 
@@ -230,7 +336,7 @@ if __name__ == "__main__":
     
     result_dir = config.path.results_dir
     model_path = os.path.join(result_dir, 'GMA-NET.pkl')
-    test_result_path = os.path.join(result_dir, 'GMANetPreTrain_test.csv')
+    test_result_path = os.path.join(result_dir, 'pretrain', 'GMANetPreTrain_test.csv')
     os.makedirs(result_dir, exist_ok=True)
 
     X, y, samples_weights = read_dataset(Path(train_dir))

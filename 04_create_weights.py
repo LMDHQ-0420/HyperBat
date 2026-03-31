@@ -80,9 +80,6 @@ def slide_cycle(battery, slide, window_size, stride):
     return windows
 
 
-import torch
-import torch.nn as nn
-
 def combined_loss(preds, targets, param_A, param_B, 
                   lambda_smooth=0.01,    # 时间平滑：相邻窗口不要突变
                   lambda_soh=0.01,       # 状态一致：相似SOH的权重靠近 (建议调小点，给流动留空间)
@@ -216,12 +213,19 @@ def train(windows, model, device, sub_weights_dir, battery_id):
         if counter >= patience:
             break
 
-    # 4. 保存每个窗口的结果
+    # 4. 保存每个窗口的结果 (修改版：直接保存 W)
     for i in range(num_wins):
         start_idx = windows[i]['start_idx']
         save_path = sub_weights_dir / f'{battery_id}_{start_idx}.pkl'
+        
+        # 计算合成后的 W [64, 32]
+        W_final = torch.matmul(best_A[i], best_B[i]) 
+        
         torch.save({
-            'param_A': best_A[i].cpu(),
+            'weight_W': W_final.cpu(),  # 直接存 W
+            'start_idx': start_idx,
+            # 如果你想保留 A 和 B 备用也可以，但扩散模型主要读 weight_W
+            'param_A': best_A[i].cpu(), 
             'param_B': best_B[i].cpu()
         }, save_path)
     
@@ -233,22 +237,18 @@ def train(windows, model, device, sub_weights_dir, battery_id):
 # -----------------------------------------------------------------------------
 def test(weight_path, model, device, battery, slide, start_idx, window_size, test_result_path):
     """
-    使用保存的 A, B 参数，测试:
-    1. 当前窗口 (mse_win)
-    2. 整个电池生命周期 (mse_bat)
-    并将结果写入 CSV。
+    修改版：直接加载合成后的 weight_W 进行推理
     """
     
-    # 1. 加载刚刚训练好的 A, B
+    # 1. 加载合成后的权重 W [64, 32]
     # ---------------------------------------------------------
     weights = torch.load(weight_path, map_location=device)
-    param_A = weights['param_A'].to(device)
-    param_B = weights['param_B'].to(device)
+    
+    # 兼容性处理：优先读取 weight_W，如果不存在则现场合成
+    W = weights['weight_W'].to(device)
     
     # 2. 准备数据
     # ---------------------------------------------------------
-    # A. 当前窗口数据 (Window Data)
-    # 我们需要根据 start_idx 重新切一下，或者传入 (为了简单，这里重切)
     cycles = battery.cycle_data
     if not slide:
         win_cycles = cycles
@@ -259,7 +259,6 @@ def test(weight_path, model, device, battery, slide, start_idx, window_size, tes
     X_win = torch.tensor(np.stack([np.asarray(c.labeled_Qc, dtype=np.float32) for c in win_cycles]), dtype=torch.float32).to(device)
     y_win = np.array([c.labeled_soh for c in win_cycles], dtype=np.float32)
     
-    # B. 全电池数据 (Battery Data)
     X_bat = torch.tensor(np.stack([np.asarray(c.labeled_Qc, dtype=np.float32) for c in cycles]), dtype=torch.float32).to(device)
     y_bat = np.array([c.labeled_soh for c in cycles], dtype=np.float32)
     
@@ -267,12 +266,20 @@ def test(weight_path, model, device, battery, slide, start_idx, window_size, tes
     # ---------------------------------------------------------
     model.eval()
     with torch.no_grad():
-        # 预测窗口
-        pred_win = model(X_win, param_A, param_B).cpu().squeeze(1).numpy()
-        # 预测全电池 (用针对该窗口优化的参数去预测全生命周期，看泛化性)
-        pred_bat = model(X_bat, param_A, param_B).cpu().squeeze(1).numpy()
+        # A. 提取特征
+        feat_win = model.encoder(X_win) # [L_win, 64]
+        feat_bat = model.encoder(X_bat) # [L_bat, 64]
         
-    # 4. 计算指标
+        # B. 直接使用 W 进行矩阵乘法 (feat @ W)
+        # 注意：这里 W 已经是 [64, 32]，所以直接乘即可
+        aligned_win = torch.matmul(feat_win, W) # [L_win, 32]
+        aligned_bat = torch.matmul(feat_bat, W) # [L_bat, 32]
+        
+        # C. 预测 SOH
+        pred_win = model.head(aligned_win).cpu().squeeze(1).numpy()
+        pred_bat = model.head(aligned_bat).cpu().squeeze(1).numpy()
+        
+    # 4. 计算指标与写入 CSV (保持原样)
     # ---------------------------------------------------------
     def calc_metrics(pred, true):
         mse = np.mean((pred - true) ** 2)
@@ -283,10 +290,6 @@ def test(weight_path, model, device, battery, slide, start_idx, window_size, tes
     mse_win, mae_win, rmse_win = calc_metrics(pred_win, y_win)
     mse_bat, mae_bat, rmse_bat = calc_metrics(pred_bat, y_bat)
     
-    # 5. 写入 CSV
-    # ---------------------------------------------------------
-    # header = ['battery', 'window_start', 'mse_win', 'mae_win', 'rmse_win', 'mse_bat', 'mae_bat', 'rmse_bat']
-    
     test_result_path.parent.mkdir(parents=True, exist_ok=True)
     need_header = not test_result_path.exists()
     
@@ -294,7 +297,6 @@ def test(weight_path, model, device, battery, slide, start_idx, window_size, tes
         if need_header:
             header = ['battery', 'window_start', 'mse_win', 'mae_win', 'rmse_win', 'mse_bat', 'mae_bat', 'rmse_bat']
             f.write(','.join(header) + '\n')
-            
         line = f"{battery.cell_id},{start_idx},{mse_win:.6f},{mae_win:.6f},{rmse_win:.6f},{mse_bat:.6f},{mae_bat:.6f},{rmse_bat:.6f}\n"
         f.write(line)
 
@@ -363,7 +365,7 @@ if __name__ == "__main__":
             if not windows: continue
 
             # 2. 联合训练这颗电池的所有窗口 (得到平滑权重)
-            best_A_seq, best_B_seq = train(windows, model, device, sub_weights_dir, file.stem)
+            train(windows, model, device, sub_weights_dir, file.stem)
 
             # 3. 测试与记录结果 (循环所有窗口进行测试记录)
             result_path = result_dir / f'{result_file_name}_{data_dir.name}.csv'
