@@ -122,6 +122,12 @@ if __name__ == "__main__":
     config = OmegaConf.create(config)
 
     parser = argparse.ArgumentParser(description="HyperBat End-to-End Detailed Evaluation")
+    parser.add_argument(
+        "--slide",
+        choices=['True', 'False'],
+        help="Whether to use sliding window training (string True/False)",
+        default='True'
+    )
     parser.add_argument("--window_size", type=int, default=200)    
     parser.add_argument("--stride", type=int, default=50)
     parser.add_argument("--local_num_cycles", type=int, default=5)
@@ -139,10 +145,15 @@ if __name__ == "__main__":
 
     # 模型路径
     model_path = Path(config.path.results_dir) / 'GMA-NET.pkl'
-    hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_{args.local_num_cycles}_{args.global_num_cycles}_wsize_{args.window_size}_stride_{args.stride}.pkl'
-    
-    # 输出详细 CSV 的路径
-    detailed_csv_path = result_dir / f'End2End_ws{args.window_size}_l{args.local_num_cycles}.csv'
+
+    if not args.slide:
+        weights_dir = Path(config.path.weights_dir) / 'full'
+        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_full_global{args.global_num_cycles}_local{args.local_num_cycles}.pkl'
+        result_path = result_dir / f'End2End_full_global{args.global_num_cycles}_local{args.local_num_cycles}_test.csv'
+    else:
+        weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
+        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_wsize{args.window_size}_stride_{args.stride}_global{args.global_num_cycles}_local{args.local_num_cycles}.pkl'
+        result_path = result_dir / f'End2End_wsize{args.window_size}_stride_{args.stride}_global{args.global_num_cycles}_local{args.local_num_cycles}.csv'
 
     # --- 模型加载 ---
     # 1. 加载 GMA-NET (Base)
@@ -166,5 +177,5 @@ if __name__ == "__main__":
         labeled_dir, 
         device, 
         args, 
-        detailed_csv_path
+        result_path
     )

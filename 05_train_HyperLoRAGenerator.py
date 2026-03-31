@@ -329,13 +329,13 @@ if __name__ == "__main__":
     
     model_path = Path(config.path.results_dir) / 'GMA-NET.pkl'
     if not args.slide:
-        weights_dir = Path(config.path.weights_dir) / 'no_slide'
-        result_path = result_dir / f'HyperLoRA_no_slide_{args.local_num_cycles}_{args.global_num_cycles}_test.csv'
-        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_{args.local_num_cycles}_{args.global_num_cycles}_no_slide.pkl'
+        weights_dir = Path(config.path.weights_dir) / 'full'
+        result_path = result_dir / f'HyperLoRA_full_global{args.global_num_cycles}_local{args.local_num_cycles}_test.csv'
+        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_full_global{args.global_num_cycles}_local{args.local_num_cycles}.pkl'
     else:
         weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
-        result_path = result_dir / f'HyperLoRA_wsize_{args.local_num_cycles}_{args.global_num_cycles}_{args.window_size}_stride_{args.stride}_test.csv'
-        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_{args.local_num_cycles}_{args.global_num_cycles}_wsize_{args.window_size}_stride_{args.stride}.pkl'
+        result_path = result_dir / f'HyperLoRA_wsize{args.window_size}_stride_{args.stride}_global{args.global_num_cycles}_local{args.local_num_cycles}.csv'
+        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_wsize{args.window_size}_stride_{args.stride}_global{args.global_num_cycles}_local{args.local_num_cycles}.pkl'
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # A. 训练宏观逻辑

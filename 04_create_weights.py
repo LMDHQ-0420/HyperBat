@@ -335,15 +335,15 @@ if __name__ == "__main__":
     logging.info(f"Slide mode: {slide} | window_size={window_size}, stride={stride}")
 
     labeled_dir = Path(config.path.labeled_dir)
-    result_dir = Path(config.path.results_dir) / 'GMANET_results'
+    result_dir = Path(config.path.results_dir) / 'create_weights'
     result_dir.mkdir(parents=True, exist_ok=True)
     pretrained_path = Path(config.path.results_dir) / 'GMA-NET.pkl'
     if not slide:
-        weights_dir = Path(config.path.weights_dir) / 'no_slide'
-        result_file_name = 'GMANet_no_slide_test'
+        weights_dir = Path(config.path.weights_dir) / 'full'
+        result_file_name = 'GMANet_full_test'
     else:
         weights_dir = Path(config.path.weights_dir) / f'wsize_{window_size}_stride_{stride}'
-        result_file_name = f'GMANet_wsize_{window_size}_stride_{stride}_test'
+        result_file_name = f'GMANet_wsize{window_size}_stride{stride}'
     weights_dir.mkdir(parents=True, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
