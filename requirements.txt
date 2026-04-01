@@ -1,0 +1,10 @@
+h5py
+hydra-core
+numba
+numpy
+omegaconf
+openpyxl
+pandas
+scipy
+torch
+tqdm

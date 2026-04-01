@@ -154,32 +154,62 @@ def combined_loss(preds, targets, param_A, param_B,
 
     return total_loss
 
-def train(windows, model, device, sub_weights_dir, battery_id):
+def train(windows, model, device, sub_weights_dir, battery_id, num_restarts=300):
     """
-    方案 B: 全电池 BPTT 联合优化。
-    一次性优化一颗电池内的所有窗口参数，确保轨迹平滑。
+    极致精度版：300次并行初始化选优
     """
     num_wins = len(windows)
     if num_wins == 0: return
 
-    # 1. 预提取特征 (显存优化：避免在大模型上计算梯度)
+    # 1. 预提取特征 (保持不变，避免重复计算)
     all_X = torch.tensor(np.stack([w['X'] for w in windows]), dtype=torch.float32).to(device)
     all_y = torch.tensor(np.stack([w['y'] for w in windows]), dtype=torch.float32).to(device)
-    
     model.eval()
     with torch.no_grad():
-        # [num_wins * window_size, 400] -> [num_wins, window_size, 64]
         flat_X = all_X.view(-1, all_X.shape[-1])
         all_features = model.encoder(flat_X).view(num_wins, all_X.shape[1], -1)
 
-    # 2. 初始化该电池所有窗口的 A, B 参数序列
-    # Shape: [num_wins, 64, rank] 和 [num_wins, rank, 32]
-    param_A = nn.Parameter(torch.empty(num_wins, 64, model.rank, device=device))
-    param_B = nn.Parameter(torch.empty(num_wins, model.rank, 32, device=device))
-    nn.init.orthogonal_(param_A)
-    nn.init.orthogonal_(param_B)
+    # 2. 海选阶段 (Phase A: The Race)
+    best_init_loss = float('inf')
+    best_seeds = None
+    
+    # 为了显存安全，建议分批进行海选 (比如每批 50 个)
+    batch_size_restarts = 50 
+    for b in range(0, num_restarts, batch_size_restarts):
+        current_batch_size = min(batch_size_restarts, num_restarts - b)
+        
+        # 批量初始化参数 [batch_restarts, num_wins, 64, rank]
+        # 注意：这里我们可以利用广播机制一次性计算多个种子的 Loss
+        # 但为了代码可读性和稳定性，我们用循环寻找最有潜力的种子
+        for i in range(current_batch_size):
+            # 随机正交初始化
+            temp_A = torch.empty(num_wins, 64, model.rank, device=device)
+            temp_B = torch.empty(num_wins, model.rank, 32, device=device)
+            nn.init.orthogonal_(temp_A)
+            nn.init.orthogonal_(temp_B)
+            
+            temp_A = nn.Parameter(temp_A)
+            temp_B = nn.Parameter(temp_B)
+            temp_opt = optim.Adam([temp_A, temp_B], lr=1e-2)
+            
+            # 短冲刺：30个 epoch 足以看出收敛潜力
+            for _ in range(30):
+                temp_opt.zero_grad()
+                W = torch.bmm(temp_A, temp_B)
+                p = model.head(torch.matmul(all_features, W))
+                l = combined_loss(p, all_y, temp_A, temp_B)
+                l.backward()
+                temp_opt.step()
+            
+            this_loss = l.item()
+            if this_loss < best_init_loss:
+                best_init_loss = this_loss
+                best_seeds = (temp_A.detach().clone(), temp_B.detach().clone())
 
-    optimizer = optim.Adam([param_A, param_B], lr=1e-2)
+    # 3. 决赛阶段 (Phase B: Fine-tuning)
+    param_A = nn.Parameter(best_seeds[0])
+    param_B = nn.Parameter(best_seeds[1])
+    optimizer = optim.Adam([param_A, param_B], lr=5e-3)
     
     # 3. 联合优化循环
     max_epochs = 1200
