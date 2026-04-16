@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 class HyperLoRAGenerator(nn.Module):
     def __init__(self, feature_dim=64, rank=4):
@@ -105,3 +106,76 @@ class AdvancedHyperGen(nn.Module):
         log_s = self.log_s_head(z)
         
         return A, B, log_s
+
+
+
+class WeightDenoiser(nn.Module):
+    """
+    核心去噪网络：基于 Transformer 解码器结构
+    输入：x_t (385维噪声), t (时间步), global_feats (变长), local_feats (变长)
+    """
+    def __init__(self, weight_dim=385, hidden_dim=256, nhead=8):
+        super().__init__()
+        # 1. 时间步嵌入
+        self.time_mlp = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.SiLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+        )
+        
+        # 2. 权重向量投影
+        self.weight_proj = nn.Linear(weight_dim, hidden_dim)
+        
+        # 3. 条件处理器：处理变长的 global 和 local 特征
+        # 假设输入的 feat 已经是 [Batch, Seq, 64]
+        self.cond_proj = nn.Linear(64, hidden_dim)
+        
+        # 4. Transformer 层 (包含 Cross-Attention)
+        # 我们使用标准的 Transformer Decoder Layer，因为它天然支持 Query 对 Memory 的交叉注意力
+        self.decoder_layer = nn.TransformerDecoderLayer(
+            d_model=hidden_dim, 
+            nhead=nhead, 
+            dim_feedforward=hidden_dim*4,
+            batch_first=True
+        )
+        
+        # 5. 输出投影
+        self.output_proj = nn.Linear(hidden_dim, weight_dim)
+
+    def forward(self, x_t, t, global_feats, local_feats):
+        """
+        x_t: [B, 385]
+        t: [B] 标量时间步
+        global_feats: [B, G, 64]
+        local_feats: [B, L, 64]
+        """
+        # A. 时间嵌入
+        # 显式使用 hidden_dim (256) 确保对齐
+        t_emb = self._get_timestep_embedding(t, self.weight_proj.out_features) 
+        t_emb = self.time_mlp(t_emb) 
+        
+        # B. 基础特征投影并增加序列维度
+        h = self.weight_proj(x_t) + t_emb # [B, 256]
+        h = h.unsqueeze(1)               # [B, 1, 256] <--- 关键：Transformer 需要 Seq 维度
+        
+        # C. 拼接条件上下文
+        cond = torch.cat([global_feats, local_feats], dim=1) # [B, G+L, 64]
+        memory = self.cond_proj(cond) # [B, G+L, 256]
+        
+        # D. Cross-Attention
+        # Query: h, Key/Value: memory
+        out = self.decoder_layer(h, memory) # [B, 1, 256]
+        
+        # E. 映射回权重空间
+        return self.output_proj(out.squeeze(1)) # [B, 385]
+
+    def _get_timestep_embedding(self, timesteps, embedding_dim):
+        """标准正弦时间嵌入"""
+        half_dim = embedding_dim // 2
+        emb = math.log(10000) / (half_dim - 1)
+        emb = torch.exp(torch.arange(half_dim, device=timesteps.device) * -emb)
+        emb = timesteps[:, None].float() * emb[None, :]
+        emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
+        if embedding_dim % 2 == 1:
+            emb = nn.functional.pad(emb, (0, 1))
+        return emb

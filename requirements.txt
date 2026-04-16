@@ -8,3 +8,6 @@ pandas
 scipy
 torch
 tqdm
+matplotlib
+scikit-learn
+seaborn

@@ -11,3 +11,5 @@ __pycache__/
 
 # 编辑器配置
 .vscode/
+
+05_*.txt
