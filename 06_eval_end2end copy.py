@@ -18,7 +18,7 @@ from model import GMANet, WeightDenoiser  # 确保导入扩散模型类
 # ==========================================
 
 class DiffusionSampler:
-    def __init__(self, T=1000, device='cuda'):
+    def __init__(self, T=20, device='cuda'):
         self.T = T
         self.device = device
         # 需与训练时的调度完全一致
@@ -118,7 +118,8 @@ def run_diffusion_end2end_evaluation(base_model, denoiser, sampler, stats, weigh
                 gen_vec = gen_vec_norm * t_std + t_mean
                 
                 # D. 拆解参数: A(4*64=256), B(4*32=128), log_s(1)
-                p_A = gen_vec[:, 0:256].view(1, 4, 64)
+                # A: 64*4 = 256, B: 4*32 = 128
+                p_A = gen_vec[:, 0:256].view(1, 64, 4)  # 对应 apply_lora 里的形状
                 p_B = gen_vec[:, 256:384].view(1, 4, 32)
                 p_log_s = gen_vec[:, 384:385]
                 

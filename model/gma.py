@@ -102,9 +102,34 @@ class GMANet(nn.Module):
         self.head = SOHPredictor(input_dim=32)
         self.rank = rank
 
+    def apply_lora(self, feat, param_A, param_B, param_log_s):
+        """
+        feat: [Batch, 64]
+        param_A: [Batch, 64, rank] (或者是 [Batch, rank, 64], 取决于你生成时的形状)
+        param_B: [Batch, rank, 32]
+        param_log_s: [Batch, 1]
+        """
+        # 计算 W = A @ B
+        # 注意：这里要确保 param_A 和 param_B 的维度可以相乘
+        # 根据你之前的代码 A 是 256 维 (4*64)，B 是 128 维 (4*32)
+        # 此时 A 应该是 [Batch, 64, 4], B 应该是 [Batch, 4, 32]
+        
+        # 1. 矩阵乘法得到适配层
+        W = torch.bmm(param_A, param_B) # [Batch, 64, 32]
+        
+        # 2. 特征对齐
+        # feat: [Batch, 64] -> [Batch, 1, 64]
+        aligned = torch.bmm(feat.unsqueeze(1), W).squeeze(1) # [Batch, 32]
+        
+        # 3. 应用 log_scale 缩放 (exp(log_s))
+        scale = torch.exp(param_log_s) # [Batch, 1]
+        
+        # 4. 预测 SOH
+        return self.head(aligned) * scale
+
     def forward(self, x, param_A, param_B):
+        # 原有的 forward 保持兼容
         feat = self.encoder(x)
-        # W = A @ B [64, 32]
         if param_A.dim() == 2:
             W = param_A @ param_B
             aligned = feat @ W
