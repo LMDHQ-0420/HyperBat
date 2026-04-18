@@ -230,19 +230,19 @@ if __name__ == "__main__":
     
     # 路径配置
     res_dir = Path(config.path.results_dir)
-    e2e_dir = res_dir / "end2end_diffusion_results"
-    e2e_dir.mkdir(parents=True, exist_ok=True)
+    csv_dir = res_dir / "diffusion_results"
+    csv_dir.mkdir(parents=True, exist_ok=True)
     
     labeled_dir = Path(config.path.labeled_dir)
     weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
     
     # 模型与统计量路径
     base_model_path = res_dir / 'GMA-NET.pkl'
-    diffusion_model_path = res_dir / 'WeightDiffusion_Denoiser.pkl'
+    diffusion_model_path = res_dir / 'WeightDiffusion_steps{args.diffusion_steps}_dim{denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
     stats_path = res_dir / 'diffusion_stats.pth'
     init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
     
-    result_path = e2e_dir / f'Diffusion_E2E_wsize{args.window_size}_stride{args.stride}.csv'
+    result_path = csv_dir / f'end2end_wsize{args.window_size}_stride{args.stride}.csv'
 
     # --- 加载模型 ---
     # 1. Base Model (GMANet)
