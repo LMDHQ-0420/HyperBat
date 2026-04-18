@@ -2,6 +2,42 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+class LoRAConnector(nn.Module):
+    def __init__(self, in_dim=64, out_dim=32, rank=4):
+        super().__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.rank = rank
+
+        self.param_A = nn.Parameter(torch.empty(in_dim, rank))
+        self.param_B = nn.Parameter(torch.empty(rank, out_dim))
+        self.param_log_s = nn.Parameter(torch.zeros(1))
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.orthogonal_(self.param_A)
+        nn.init.orthogonal_(self.param_B)
+        with torch.no_grad():
+            self.param_log_s.zero_()
+
+    def forward(self, feat):
+        scale = torch.exp(torch.clamp(self.param_log_s, min=-5.0, max=5.0))
+        weight = torch.matmul(self.param_A, self.param_B)
+        return torch.matmul(feat, scale * weight)
+
+    def export_abs(self, eps=1e-8):
+        A_norm = self.param_A.detach() / (torch.norm(self.param_A.detach(), p='fro') + eps)
+        B_norm = self.param_B.detach() / (torch.norm(self.param_B.detach(), p='fro') + eps)
+        log_s = self.param_log_s.detach().view(1)
+        init_vec = torch.cat([A_norm.flatten(), B_norm.flatten(), log_s])
+        return {
+            'param_A': A_norm.cpu(),
+            'param_B': B_norm.cpu(),
+            'param_log_s': log_s.cpu(),
+            'init_vec': init_vec.cpu(),
+        }
+
 class MultiScaleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -83,12 +119,12 @@ class SOHPredictor(nn.Module):
 # ==========================================
 
 class GMANetPreTrain(nn.Module):
-    def __init__(self, input_len=400):
+    def __init__(self, input_len=400, rank=4):
         super().__init__()
         self.encoder = Encoder(input_len, embed_dim=64)
         self.head = SOHPredictor(input_dim=32)
-        # 核心对齐层：Phase 1 学习到的这个权重将作为 Phase 2 的“基准锚点”
-        self.temp_connector = nn.Linear(64, 32)
+        # 用 LoRA 结构作为 Phase 1 的对齐层，便于后续扩散初始化
+        self.temp_connector = LoRAConnector(in_dim=64, out_dim=32, rank=rank)
 
     def forward(self, x):
         feat = self.encoder(x)
@@ -109,23 +145,14 @@ class GMANet(nn.Module):
         param_B: [Batch, rank, 32]
         param_log_s: [Batch, 1]
         """
-        # 计算 W = A @ B
-        # 注意：这里要确保 param_A 和 param_B 的维度可以相乘
-        # 根据你之前的代码 A 是 256 维 (4*64)，B 是 128 维 (4*32)
-        # 此时 A 应该是 [Batch, 64, 4], B 应该是 [Batch, 4, 32]
-        
-        # 1. 矩阵乘法得到适配层
-        W = torch.bmm(param_A, param_B) # [Batch, 64, 32]
-        
-        # 2. 特征对齐
-        # feat: [Batch, 64] -> [Batch, 1, 64]
+        # 1. 应用 log_scale 缩放到权重空间：W = exp(log_s) * (A @ B)
+        safe_log_s = torch.clamp(param_log_s, min=-5.0, max=5.0)
+        scale = torch.exp(safe_log_s).view(-1, 1, 1)
+        W = scale * torch.bmm(param_A, param_B) # [Batch, 64, 32]
+
+        # 2. 特征对齐并预测 SOH
         aligned = torch.bmm(feat.unsqueeze(1), W).squeeze(1) # [Batch, 32]
-        
-        # 3. 应用 log_scale 缩放 (exp(log_s))
-        scale = torch.exp(param_log_s) # [Batch, 1]
-        
-        # 4. 预测 SOH
-        return self.head(aligned) * scale
+        return self.head(aligned)
 
     def forward(self, x, param_A, param_B):
         # 原有的 forward 保持兼容

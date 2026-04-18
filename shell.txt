@@ -1,0 +1,2 @@
+nohup bash -c "python 03_pretrain_GAMNet.py > 03.txt 2>&1 && python 04_create_weights.py > 04.txt 2>&1 && python 05_train_WeightDenoiser.py > 05.txt 2>&1 && python 06_eval_end2end.py > 06.txt 2>&1" > all.log 2>&1 &
+nohup bash -c "python 05_train_WeightDenoiser.py > 05.txt 2>&1 && python 06_eval_end2end.py > 06.txt 2>&1" > all.log 2>&1 &

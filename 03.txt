@@ -1,0 +1,403 @@
+Loading data/labeled/train:   0%|          | 0/481 [00:00<?, ?it/s]Loading data/labeled/train:   0%|          | 1/481 [00:00<02:22,  3.37it/s]Loading data/labeled/train:   0%|          | 2/481 [00:00<04:12,  1.90it/s]Loading data/labeled/train:   1%|          | 3/481 [00:01<03:03,  2.61it/s]Loading data/labeled/train:   1%|          | 4/481 [00:01<02:19,  3.41it/s]Loading data/labeled/train:   1%|          | 5/481 [00:01<02:01,  3.92it/s]Loading data/labeled/train:   1%|          | 6/481 [00:01<01:44,  4.53it/s]Loading data/labeled/train:   1%|▏         | 7/481 [00:01<01:54,  4.13it/s]Loading data/labeled/train:   2%|▏         | 8/481 [00:02<01:55,  4.11it/s]Loading data/labeled/train:   2%|▏         | 9/481 [00:02<01:48,  4.37it/s]Loading data/labeled/train:   2%|▏         | 10/481 [00:02<01:56,  4.04it/s]Loading data/labeled/train:   2%|▏         | 11/481 [00:02<01:47,  4.36it/s]Loading data/labeled/train:   2%|▏         | 12/481 [00:03<01:49,  4.28it/s]Loading data/labeled/train:   3%|▎         | 13/481 [00:03<01:48,  4.30it/s]Loading data/labeled/train:   3%|▎         | 14/481 [00:03<02:13,  3.49it/s]Loading data/labeled/train:   3%|▎         | 15/481 [00:04<02:09,  3.59it/s]Loading data/labeled/train:   3%|▎         | 16/481 [00:04<01:57,  3.94it/s]Loading data/labeled/train:   4%|▎         | 17/481 [00:04<02:25,  3.20it/s]Loading data/labeled/train:   4%|▎         | 18/481 [00:04<02:11,  3.51it/s]Loading data/labeled/train:   4%|▍         | 19/481 [00:05<01:56,  3.97it/s]Loading data/labeled/train:   4%|▍         | 20/481 [00:05<01:40,  4.59it/s]Loading data/labeled/train:   4%|▍         | 21/481 [00:05<01:29,  5.12it/s]Loading data/labeled/train:   5%|▍         | 22/481 [00:05<01:46,  4.33it/s]Loading data/labeled/train:   5%|▍         | 23/481 [00:05<01:40,  4.57it/s]Loading data/labeled/train:   5%|▍         | 24/481 [00:06<01:36,  4.75it/s]Loading data/labeled/train:   5%|▌         | 25/481 [00:06<01:36,  4.70it/s]Loading data/labeled/train:   5%|▌         | 26/481 [00:06<01:46,  4.26it/s]Loading data/labeled/train:   6%|▌         | 27/481 [00:06<01:38,  4.59it/s]Loading data/labeled/train:   6%|▌         | 28/481 [00:07<01:52,  4.02it/s]Loading data/labeled/train:   6%|▌         | 29/481 [00:07<02:21,  3.20it/s]Loading data/labeled/train:   6%|▌         | 30/481 [00:07<02:12,  3.41it/s]Loading data/labeled/train:   6%|▋         | 31/481 [00:08<02:03,  3.64it/s]Loading data/labeled/train:   7%|▋         | 32/481 [00:08<02:14,  3.34it/s]Loading data/labeled/train:   7%|▋         | 33/481 [00:08<02:05,  3.56it/s]Loading data/labeled/train:   7%|▋         | 34/481 [00:08<01:50,  4.05it/s]Loading data/labeled/train:   7%|▋         | 35/481 [00:08<01:43,  4.32it/s]Loading data/labeled/train:   7%|▋         | 36/481 [00:09<01:55,  3.85it/s]Loading data/labeled/train:   8%|▊         | 37/481 [00:09<01:44,  4.24it/s]Loading data/labeled/train:   8%|▊         | 38/481 [00:09<01:53,  3.91it/s]Loading data/labeled/train:   8%|▊         | 39/481 [00:09<01:45,  4.17it/s]Loading data/labeled/train:   8%|▊         | 40/481 [00:10<02:06,  3.50it/s]Loading data/labeled/train:   9%|▊         | 41/481 [00:10<01:55,  3.81it/s]Loading data/labeled/train:   9%|▊         | 42/481 [00:10<01:59,  3.66it/s]Loading data/labeled/train:   9%|▉         | 43/481 [00:11<02:19,  3.15it/s]Loading data/labeled/train:   9%|▉         | 44/481 [00:11<02:00,  3.62it/s]Loading data/labeled/train:   9%|▉         | 45/481 [00:11<01:59,  3.64it/s]Loading data/labeled/train:  10%|▉         | 46/481 [00:11<01:47,  4.04it/s]Loading data/labeled/train:  10%|▉         | 47/481 [00:12<01:52,  3.85it/s]Loading data/labeled/train:  10%|▉         | 48/481 [00:12<01:44,  4.15it/s]Loading data/labeled/train:  10%|█         | 49/481 [00:12<01:36,  4.46it/s]Loading data/labeled/train:  10%|█         | 50/481 [00:12<01:31,  4.69it/s]Loading data/labeled/train:  11%|█         | 51/481 [00:13<01:45,  4.09it/s]Loading data/labeled/train:  11%|█         | 52/481 [00:13<01:49,  3.93it/s]Loading data/labeled/train:  11%|█         | 53/481 [00:13<02:13,  3.22it/s]Loading data/labeled/train:  11%|█         | 54/481 [00:14<01:57,  3.62it/s]Loading data/labeled/train:  11%|█▏        | 55/481 [00:14<01:47,  3.94it/s]Loading data/labeled/train:  12%|█▏        | 56/481 [00:14<01:41,  4.18it/s]Loading data/labeled/train:  12%|█▏        | 57/481 [00:14<01:37,  4.37it/s]Loading data/labeled/train:  12%|█▏        | 58/481 [00:14<01:52,  3.77it/s]Loading data/labeled/train:  12%|█▏        | 59/481 [00:15<01:46,  3.95it/s]Loading data/labeled/train:  12%|█▏        | 60/481 [00:15<01:42,  4.10it/s]Loading data/labeled/train:  13%|█▎        | 61/481 [00:15<01:42,  4.08it/s]Loading data/labeled/train:  13%|█▎        | 62/481 [00:15<01:43,  4.05it/s]Loading data/labeled/train:  13%|█▎        | 64/481 [00:16<01:11,  5.85it/s]Loading data/labeled/train:  14%|█▎        | 66/481 [00:16<00:58,  7.06it/s]Loading data/labeled/train:  14%|█▍        | 68/481 [00:16<00:48,  8.48it/s]Loading data/labeled/train:  15%|█▍        | 70/481 [00:16<00:41,  9.84it/s]Loading data/labeled/train:  15%|█▍        | 72/481 [00:16<00:36, 11.10it/s]Loading data/labeled/train:  15%|█▌        | 74/481 [00:17<00:50,  8.06it/s]Loading data/labeled/train:  16%|█▌        | 75/481 [00:17<00:54,  7.51it/s]Loading data/labeled/train:  16%|█▌        | 76/481 [00:17<01:00,  6.72it/s]Loading data/labeled/train:  16%|█▌        | 77/481 [00:17<01:32,  4.38it/s]Loading data/labeled/train:  16%|█▌        | 78/481 [00:18<02:34,  2.60it/s]Loading data/labeled/train:  16%|█▋        | 79/481 [00:19<02:19,  2.89it/s]Loading data/labeled/train:  17%|█▋        | 80/481 [00:19<02:02,  3.28it/s]Loading data/labeled/train:  17%|█▋        | 81/481 [00:19<01:51,  3.58it/s]Loading data/labeled/train:  17%|█▋        | 82/481 [00:19<01:45,  3.77it/s]Loading data/labeled/train:  17%|█▋        | 83/481 [00:19<01:38,  4.02it/s]Loading data/labeled/train:  17%|█▋        | 84/481 [00:20<01:29,  4.44it/s]Loading data/labeled/train:  18%|█▊        | 85/481 [00:20<01:27,  4.55it/s]Loading data/labeled/train:  18%|█▊        | 86/481 [00:20<01:24,  4.66it/s]Loading data/labeled/train:  18%|█▊        | 87/481 [00:20<01:22,  4.78it/s]Loading data/labeled/train:  18%|█▊        | 88/481 [00:21<01:34,  4.15it/s]Loading data/labeled/train:  19%|█▊        | 89/481 [00:21<02:11,  2.98it/s]Loading data/labeled/train:  19%|█▊        | 90/481 [00:21<01:54,  3.41it/s]Loading data/labeled/train:  19%|█▉        | 91/481 [00:21<01:39,  3.94it/s]Loading data/labeled/train:  19%|█▉        | 92/481 [00:22<01:38,  3.96it/s]Loading data/labeled/train:  19%|█▉        | 93/481 [00:22<01:38,  3.93it/s]Loading data/labeled/train:  20%|█▉        | 94/481 [00:22<01:57,  3.30it/s]Loading data/labeled/train:  20%|█▉        | 95/481 [00:23<01:47,  3.58it/s]Loading data/labeled/train:  20%|█▉        | 96/481 [00:23<01:41,  3.78it/s]Loading data/labeled/train:  20%|██        | 97/481 [00:23<01:37,  3.96it/s]Loading data/labeled/train:  20%|██        | 98/481 [00:23<01:33,  4.08it/s]Loading data/labeled/train:  21%|██        | 99/481 [00:24<01:34,  4.04it/s]Loading data/labeled/train:  21%|██        | 100/481 [00:24<01:46,  3.57it/s]Loading data/labeled/train:  21%|██        | 101/481 [00:24<01:35,  3.97it/s]Loading data/labeled/train:  21%|██        | 102/481 [00:24<01:44,  3.62it/s]Loading data/labeled/train:  21%|██▏       | 103/481 [00:25<01:34,  3.99it/s]Loading data/labeled/train:  22%|██▏       | 104/481 [00:25<01:29,  4.23it/s]Loading data/labeled/train:  22%|██▏       | 105/481 [00:25<01:24,  4.46it/s]Loading data/labeled/train:  22%|██▏       | 106/481 [00:25<01:19,  4.73it/s]Loading data/labeled/train:  22%|██▏       | 107/481 [00:25<01:16,  4.91it/s]Loading data/labeled/train:  22%|██▏       | 108/481 [00:26<01:12,  5.12it/s]Loading data/labeled/train:  23%|██▎       | 109/481 [00:26<01:05,  5.70it/s]Loading data/labeled/train:  23%|██▎       | 110/481 [00:26<01:04,  5.77it/s]Loading data/labeled/train:  23%|██▎       | 111/481 [00:26<01:44,  3.55it/s]Loading data/labeled/train:  23%|██▎       | 112/481 [00:27<01:43,  3.55it/s]Loading data/labeled/train:  23%|██▎       | 113/481 [00:27<01:42,  3.58it/s]Loading data/labeled/train:  24%|██▎       | 114/481 [00:27<01:33,  3.92it/s]Loading data/labeled/train:  24%|██▍       | 115/481 [00:27<01:27,  4.20it/s]Loading data/labeled/train:  24%|██▍       | 116/481 [00:27<01:20,  4.52it/s]Loading data/labeled/train:  24%|██▍       | 117/481 [00:28<01:11,  5.07it/s]Loading data/labeled/train:  25%|██▍       | 118/481 [00:28<01:22,  4.41it/s]Loading data/labeled/train:  25%|██▍       | 119/481 [00:28<01:18,  4.59it/s]Loading data/labeled/train:  25%|██▍       | 120/481 [00:28<01:21,  4.44it/s]Loading data/labeled/train:  25%|██▌       | 121/481 [00:29<01:34,  3.80it/s]Loading data/labeled/train:  25%|██▌       | 122/481 [00:29<01:36,  3.71it/s]Loading data/labeled/train:  26%|██▌       | 123/481 [00:29<01:30,  3.98it/s]Loading data/labeled/train:  26%|██▌       | 124/481 [00:29<01:17,  4.60it/s]Loading data/labeled/train:  26%|██▌       | 125/481 [00:30<01:14,  4.76it/s]Loading data/labeled/train:  26%|██▌       | 126/481 [00:30<01:08,  5.15it/s]Loading data/labeled/train:  26%|██▋       | 127/481 [00:30<01:06,  5.35it/s]Loading data/labeled/train:  27%|██▋       | 128/481 [00:30<01:06,  5.32it/s]Loading data/labeled/train:  27%|██▋       | 129/481 [00:30<01:02,  5.62it/s]Loading data/labeled/train:  27%|██▋       | 130/481 [00:30<01:02,  5.62it/s]Loading data/labeled/train:  27%|██▋       | 131/481 [00:31<00:57,  6.05it/s]Loading data/labeled/train:  27%|██▋       | 132/481 [00:31<00:58,  5.94it/s]Loading data/labeled/train:  28%|██▊       | 133/481 [00:31<00:57,  6.09it/s]Loading data/labeled/train:  28%|██▊       | 134/481 [00:31<00:55,  6.21it/s]Loading data/labeled/train:  28%|██▊       | 135/481 [00:31<00:50,  6.80it/s]Loading data/labeled/train:  28%|██▊       | 136/481 [00:31<00:50,  6.87it/s]Loading data/labeled/train:  28%|██▊       | 137/481 [00:31<00:47,  7.31it/s]Loading data/labeled/train:  29%|██▊       | 138/481 [00:32<00:56,  6.07it/s]Loading data/labeled/train:  29%|██▉       | 139/481 [00:32<00:50,  6.80it/s]Loading data/labeled/train:  29%|██▉       | 140/481 [00:32<00:49,  6.92it/s]Loading data/labeled/train:  29%|██▉       | 141/481 [00:32<00:45,  7.42it/s]Loading data/labeled/train:  30%|██▉       | 142/481 [00:32<00:47,  7.17it/s]Loading data/labeled/train:  30%|██▉       | 143/481 [00:32<00:44,  7.66it/s]Loading data/labeled/train:  30%|██▉       | 144/481 [00:32<00:41,  8.13it/s]Loading data/labeled/train:  30%|███       | 145/481 [00:32<00:42,  8.00it/s]Loading data/labeled/train:  30%|███       | 146/481 [00:33<00:41,  8.16it/s]Loading data/labeled/train:  31%|███       | 147/481 [00:33<00:41,  7.96it/s]Loading data/labeled/train:  31%|███       | 148/481 [00:33<00:39,  8.46it/s]Loading data/labeled/train:  31%|███       | 150/481 [00:33<00:39,  8.31it/s]Loading data/labeled/train:  32%|███▏      | 152/481 [00:33<00:41,  7.97it/s]Loading data/labeled/train:  32%|███▏      | 153/481 [00:34<00:46,  7.05it/s]Loading data/labeled/train:  32%|███▏      | 154/481 [00:34<00:50,  6.45it/s]Loading data/labeled/train:  32%|███▏      | 155/481 [00:34<01:04,  5.02it/s]Loading data/labeled/train:  32%|███▏      | 156/481 [00:34<01:01,  5.25it/s]Loading data/labeled/train:  33%|███▎      | 157/481 [00:34<01:01,  5.23it/s]Loading data/labeled/train:  33%|███▎      | 158/481 [00:35<00:59,  5.46it/s]Loading data/labeled/train:  33%|███▎      | 159/481 [00:35<00:56,  5.69it/s]Loading data/labeled/train:  33%|███▎      | 160/481 [00:35<00:57,  5.61it/s]Loading data/labeled/train:  33%|███▎      | 161/481 [00:35<01:08,  4.67it/s]Loading data/labeled/train:  34%|███▎      | 162/481 [00:36<01:25,  3.71it/s]Loading data/labeled/train:  34%|███▍      | 163/481 [00:36<01:22,  3.83it/s]Loading data/labeled/train:  34%|███▍      | 164/481 [00:36<01:20,  3.95it/s]Loading data/labeled/train:  34%|███▍      | 165/481 [00:36<01:20,  3.92it/s]Loading data/labeled/train:  35%|███▍      | 166/481 [00:37<01:12,  4.34it/s]Loading data/labeled/train:  35%|███▍      | 167/481 [00:37<01:17,  4.07it/s]Loading data/labeled/train:  35%|███▍      | 168/481 [00:37<01:12,  4.31it/s]Loading data/labeled/train:  35%|███▌      | 169/481 [00:37<01:28,  3.52it/s]Loading data/labeled/train:  35%|███▌      | 170/481 [00:38<01:19,  3.90it/s]Loading data/labeled/train:  36%|███▌      | 171/481 [00:38<01:11,  4.31it/s]Loading data/labeled/train:  36%|███▌      | 172/481 [00:38<01:19,  3.87it/s]Loading data/labeled/train:  36%|███▌      | 173/481 [00:38<01:10,  4.34it/s]Loading data/labeled/train:  36%|███▌      | 174/481 [00:38<01:00,  5.08it/s]Loading data/labeled/train:  36%|███▋      | 175/481 [00:39<00:57,  5.34it/s]Loading data/labeled/train:  37%|███▋      | 176/481 [00:39<01:00,  5.07it/s]Loading data/labeled/train:  37%|███▋      | 177/481 [00:39<00:59,  5.11it/s]Loading data/labeled/train:  37%|███▋      | 178/481 [00:39<00:54,  5.53it/s]Loading data/labeled/train:  37%|███▋      | 179/481 [00:40<01:25,  3.52it/s]Loading data/labeled/train:  37%|███▋      | 180/481 [00:40<01:25,  3.53it/s]Loading data/labeled/train:  38%|███▊      | 181/481 [00:40<01:21,  3.70it/s]Loading data/labeled/train:  38%|███▊      | 182/481 [00:40<01:17,  3.88it/s]Loading data/labeled/train:  38%|███▊      | 183/481 [00:41<01:10,  4.21it/s]Loading data/labeled/train:  38%|███▊      | 184/481 [00:41<01:25,  3.46it/s]Loading data/labeled/train:  38%|███▊      | 185/481 [00:41<01:33,  3.18it/s]Loading data/labeled/train:  39%|███▊      | 186/481 [00:42<01:26,  3.42it/s]Loading data/labeled/train:  39%|███▉      | 187/481 [00:42<01:18,  3.73it/s]Loading data/labeled/train:  39%|███▉      | 188/481 [00:42<01:18,  3.72it/s]Loading data/labeled/train:  39%|███▉      | 189/481 [00:42<01:07,  4.33it/s]Loading data/labeled/train:  40%|███▉      | 190/481 [00:43<01:13,  3.95it/s]Loading data/labeled/train:  40%|███▉      | 191/481 [00:43<01:09,  4.15it/s]Loading data/labeled/train:  40%|███▉      | 192/481 [00:43<01:05,  4.44it/s]Loading data/labeled/train:  40%|████      | 193/481 [00:43<01:13,  3.92it/s]Loading data/labeled/train:  40%|████      | 194/481 [00:44<01:17,  3.70it/s]Loading data/labeled/train:  41%|████      | 195/481 [00:44<01:08,  4.20it/s]Loading data/labeled/train:  41%|████      | 196/481 [00:44<01:16,  3.70it/s]Loading data/labeled/train:  41%|████      | 197/481 [00:44<01:09,  4.10it/s]Loading data/labeled/train:  41%|████      | 198/481 [00:44<01:05,  4.35it/s]Loading data/labeled/train:  41%|████▏     | 199/481 [00:45<01:01,  4.61it/s]Loading data/labeled/train:  42%|████▏     | 200/481 [00:45<01:07,  4.18it/s]Loading data/labeled/train:  42%|████▏     | 201/481 [00:45<01:02,  4.44it/s]Loading data/labeled/train:  42%|████▏     | 202/481 [00:45<00:59,  4.72it/s]Loading data/labeled/train:  42%|████▏     | 203/481 [00:45<00:55,  5.04it/s]Loading data/labeled/train:  42%|████▏     | 204/481 [00:46<00:51,  5.40it/s]Loading data/labeled/train:  43%|████▎     | 205/481 [00:46<00:47,  5.83it/s]Loading data/labeled/train:  43%|████▎     | 206/481 [00:46<00:45,  6.08it/s]Loading data/labeled/train:  43%|████▎     | 207/481 [00:46<00:46,  5.86it/s]Loading data/labeled/train:  43%|████▎     | 208/481 [00:46<00:52,  5.20it/s]Loading data/labeled/train:  43%|████▎     | 209/481 [00:47<00:52,  5.21it/s]Loading data/labeled/train:  44%|████▍     | 211/481 [00:47<00:40,  6.70it/s]Loading data/labeled/train:  44%|████▍     | 212/481 [00:47<00:40,  6.59it/s]Loading data/labeled/train:  44%|████▍     | 213/481 [00:47<00:52,  5.13it/s]Loading data/labeled/train:  44%|████▍     | 214/481 [00:47<00:54,  4.94it/s]Loading data/labeled/train:  45%|████▍     | 215/481 [00:48<00:51,  5.12it/s]Loading data/labeled/train:  45%|████▍     | 216/481 [00:48<00:47,  5.59it/s]Loading data/labeled/train:  45%|████▌     | 217/481 [00:48<00:42,  6.19it/s]Loading data/labeled/train:  46%|████▌     | 219/481 [00:48<00:29,  8.95it/s]Loading data/labeled/train:  46%|████▌     | 221/481 [00:48<00:23, 10.88it/s]Loading data/labeled/train:  46%|████▋     | 223/481 [00:48<00:21, 12.26it/s]Loading data/labeled/train:  47%|████▋     | 226/481 [00:48<00:17, 14.55it/s]Loading data/labeled/train:  48%|████▊     | 229/481 [00:49<00:15, 16.03it/s]Loading data/labeled/train:  48%|████▊     | 232/481 [00:49<00:14, 16.62it/s]Loading data/labeled/train:  49%|████▉     | 235/481 [00:49<00:14, 17.24it/s]Loading data/labeled/train:  49%|████▉     | 237/481 [00:49<00:13, 17.69it/s]Loading data/labeled/train:  50%|████▉     | 239/481 [00:49<00:14, 16.61it/s]Loading data/labeled/train:  50%|█████     | 241/481 [00:49<00:18, 13.11it/s]Loading data/labeled/train:  51%|█████     | 243/481 [00:49<00:18, 12.76it/s]Loading data/labeled/train:  51%|█████     | 245/481 [00:50<00:18, 12.78it/s]Loading data/labeled/train:  51%|█████▏    | 247/481 [00:50<00:18, 12.90it/s]Loading data/labeled/train:  52%|█████▏    | 249/481 [00:50<00:17, 13.12it/s]Loading data/labeled/train:  52%|█████▏    | 251/481 [00:50<00:17, 12.87it/s]Loading data/labeled/train:  53%|█████▎    | 253/481 [00:50<00:17, 12.86it/s]Loading data/labeled/train:  53%|█████▎    | 255/481 [00:50<00:16, 13.70it/s]Loading data/labeled/train:  53%|█████▎    | 257/481 [00:51<00:18, 12.08it/s]Loading data/labeled/train:  54%|█████▍    | 259/481 [00:51<00:23,  9.33it/s]Loading data/labeled/train:  54%|█████▍    | 261/481 [00:51<00:25,  8.57it/s]Loading data/labeled/train:  54%|█████▍    | 262/481 [00:51<00:26,  8.29it/s]Loading data/labeled/train:  55%|█████▍    | 263/481 [00:51<00:26,  8.26it/s]Loading data/labeled/train:  55%|█████▍    | 264/481 [00:52<00:30,  7.03it/s]Loading data/labeled/train:  55%|█████▌    | 265/481 [00:52<00:29,  7.27it/s]Loading data/labeled/train:  55%|█████▌    | 266/481 [00:52<00:29,  7.41it/s]Loading data/labeled/train:  56%|█████▌    | 267/481 [00:52<00:29,  7.25it/s]Loading data/labeled/train:  56%|█████▌    | 268/481 [00:52<00:29,  7.17it/s]Loading data/labeled/train:  56%|█████▌    | 269/481 [00:52<00:27,  7.62it/s]Loading data/labeled/train:  56%|█████▌    | 270/481 [00:53<00:31,  6.68it/s]Loading data/labeled/train:  56%|█████▋    | 271/481 [00:53<00:30,  6.96it/s]Loading data/labeled/train:  57%|█████▋    | 272/481 [00:53<00:27,  7.46it/s]Loading data/labeled/train:  57%|█████▋    | 273/481 [00:53<00:26,  7.75it/s]Loading data/labeled/train:  57%|█████▋    | 274/481 [00:53<00:25,  8.18it/s]Loading data/labeled/train:  57%|█████▋    | 275/481 [00:53<00:25,  8.24it/s]Loading data/labeled/train:  57%|█████▋    | 276/481 [00:53<00:28,  7.12it/s]Loading data/labeled/train:  58%|█████▊    | 277/481 [00:53<00:27,  7.54it/s]Loading data/labeled/train:  58%|█████▊    | 278/481 [00:54<00:27,  7.43it/s]Loading data/labeled/train:  58%|█████▊    | 279/481 [00:54<00:27,  7.25it/s]Loading data/labeled/train:  58%|█████▊    | 280/481 [00:54<00:27,  7.36it/s]Loading data/labeled/train:  58%|█████▊    | 281/481 [00:54<00:25,  7.73it/s]Loading data/labeled/train:  59%|█████▊    | 282/481 [00:54<00:29,  6.80it/s]Loading data/labeled/train:  59%|█████▉    | 283/481 [00:54<00:26,  7.44it/s]Loading data/labeled/train:  59%|█████▉    | 284/481 [00:54<00:25,  7.77it/s]Loading data/labeled/train:  59%|█████▉    | 285/481 [00:54<00:24,  7.95it/s]Loading data/labeled/train:  59%|█████▉    | 286/481 [00:55<00:24,  7.90it/s]Loading data/labeled/train:  60%|█████▉    | 287/481 [00:55<00:23,  8.14it/s]Loading data/labeled/train:  60%|█████▉    | 288/481 [00:55<00:23,  8.20it/s]Loading data/labeled/train:  60%|██████    | 289/481 [00:55<00:28,  6.77it/s]Loading data/labeled/train:  60%|██████    | 290/481 [00:55<00:27,  6.84it/s]Loading data/labeled/train:  60%|██████    | 291/481 [00:55<00:27,  7.01it/s]Loading data/labeled/train:  61%|██████    | 292/481 [00:55<00:25,  7.36it/s]Loading data/labeled/train:  61%|██████    | 293/481 [00:56<00:24,  7.57it/s]Loading data/labeled/train:  61%|██████    | 294/481 [00:56<00:23,  7.84it/s]Loading data/labeled/train:  61%|██████▏   | 295/481 [00:56<00:27,  6.80it/s]Loading data/labeled/train:  62%|██████▏   | 296/481 [00:56<00:25,  7.26it/s]Loading data/labeled/train:  62%|██████▏   | 297/481 [00:56<00:23,  7.79it/s]Loading data/labeled/train:  62%|██████▏   | 298/481 [00:56<00:23,  7.80it/s]Loading data/labeled/train:  62%|██████▏   | 299/481 [00:56<00:22,  7.92it/s]Loading data/labeled/train:  62%|██████▏   | 300/481 [00:56<00:21,  8.30it/s]Loading data/labeled/train:  63%|██████▎   | 301/481 [00:57<00:21,  8.44it/s]Loading data/labeled/train:  63%|██████▎   | 302/481 [00:57<00:24,  7.21it/s]Loading data/labeled/train:  63%|██████▎   | 303/481 [00:57<00:23,  7.56it/s]Loading data/labeled/train:  63%|██████▎   | 304/481 [00:57<00:22,  7.75it/s]Loading data/labeled/train:  63%|██████▎   | 305/481 [00:57<00:32,  5.49it/s]Loading data/labeled/train:  64%|██████▎   | 306/481 [00:57<00:30,  5.73it/s]Loading data/labeled/train:  64%|██████▍   | 307/481 [00:58<00:32,  5.37it/s]Loading data/labeled/train:  64%|██████▍   | 308/481 [00:58<00:30,  5.71it/s]Loading data/labeled/train:  64%|██████▍   | 309/481 [00:58<00:30,  5.56it/s]Loading data/labeled/train:  64%|██████▍   | 310/481 [00:58<00:31,  5.40it/s]Loading data/labeled/train:  65%|██████▍   | 311/481 [00:58<00:30,  5.50it/s]Loading data/labeled/train:  65%|██████▍   | 312/481 [00:59<00:32,  5.24it/s]Loading data/labeled/train:  65%|██████▌   | 313/481 [00:59<00:37,  4.51it/s]Loading data/labeled/train:  65%|██████▌   | 314/481 [00:59<00:33,  4.94it/s]Loading data/labeled/train:  65%|██████▌   | 315/481 [00:59<00:30,  5.51it/s]Loading data/labeled/train:  66%|██████▌   | 316/481 [00:59<00:36,  4.56it/s]Loading data/labeled/train:  66%|██████▌   | 317/481 [01:00<00:32,  5.01it/s]Loading data/labeled/train:  66%|██████▌   | 318/481 [01:00<00:32,  5.01it/s]Loading data/labeled/train:  66%|██████▋   | 319/481 [01:00<00:30,  5.40it/s]Loading data/labeled/train:  67%|██████▋   | 320/481 [01:00<00:28,  5.56it/s]Loading data/labeled/train:  67%|██████▋   | 321/481 [01:00<00:25,  6.32it/s]Loading data/labeled/train:  67%|██████▋   | 322/481 [01:00<00:24,  6.60it/s]Loading data/labeled/train:  67%|██████▋   | 323/481 [01:01<00:22,  6.99it/s]Loading data/labeled/train:  67%|██████▋   | 324/481 [01:01<00:22,  6.98it/s]Loading data/labeled/train:  68%|██████▊   | 325/481 [01:01<00:22,  6.88it/s]Loading data/labeled/train:  68%|██████▊   | 326/481 [01:01<00:21,  7.38it/s]Loading data/labeled/train:  68%|██████▊   | 327/481 [01:01<00:27,  5.52it/s]Loading data/labeled/train:  68%|██████▊   | 328/481 [01:01<00:25,  6.03it/s]Loading data/labeled/train:  68%|██████▊   | 329/481 [01:02<00:35,  4.28it/s]Loading data/labeled/train:  69%|██████▊   | 330/481 [01:02<00:38,  3.94it/s]Loading data/labeled/train:  69%|██████▉   | 331/481 [01:02<00:39,  3.76it/s]Loading data/labeled/train:  69%|██████▉   | 332/481 [01:03<00:41,  3.60it/s]Loading data/labeled/train:  69%|██████▉   | 333/481 [01:03<00:42,  3.50it/s]Loading data/labeled/train:  69%|██████▉   | 334/481 [01:03<00:44,  3.33it/s]Loading data/labeled/train:  70%|██████▉   | 335/481 [01:04<00:50,  2.89it/s]Loading data/labeled/train:  70%|██████▉   | 336/481 [01:04<00:50,  2.86it/s]Loading data/labeled/train:  70%|███████   | 337/481 [01:04<00:50,  2.87it/s]Loading data/labeled/train:  70%|███████   | 338/481 [01:05<00:48,  2.95it/s]Loading data/labeled/train:  70%|███████   | 339/481 [01:05<00:48,  2.91it/s]Loading data/labeled/train:  71%|███████   | 340/481 [01:05<00:45,  3.10it/s]Loading data/labeled/train:  71%|███████   | 341/481 [01:05<00:35,  3.89it/s]Loading data/labeled/train:  71%|███████   | 342/481 [01:06<00:30,  4.61it/s]Loading data/labeled/train:  71%|███████▏  | 343/481 [01:06<00:25,  5.48it/s]Loading data/labeled/train:  72%|███████▏  | 345/481 [01:06<00:18,  7.50it/s]Loading data/labeled/train:  72%|███████▏  | 346/481 [01:06<00:23,  5.65it/s]Loading data/labeled/train:  72%|███████▏  | 347/481 [01:07<00:43,  3.09it/s]Loading data/labeled/train:  72%|███████▏  | 348/481 [01:08<01:09,  1.91it/s]Loading data/labeled/train:  73%|███████▎  | 349/481 [01:09<01:12,  1.81it/s]Loading data/labeled/train:  73%|███████▎  | 350/481 [01:09<01:16,  1.71it/s]Loading data/labeled/train:  73%|███████▎  | 351/481 [01:10<01:10,  1.85it/s]Loading data/labeled/train:  73%|███████▎  | 352/481 [01:10<01:04,  1.99it/s]Loading data/labeled/train:  73%|███████▎  | 353/481 [01:11<01:01,  2.07it/s]Loading data/labeled/train:  74%|███████▎  | 354/481 [01:11<00:52,  2.41it/s]Loading data/labeled/train:  74%|███████▍  | 355/481 [01:11<00:52,  2.40it/s]Loading data/labeled/train:  74%|███████▍  | 356/481 [01:12<00:59,  2.12it/s]Loading data/labeled/train:  74%|███████▍  | 357/481 [01:12<00:58,  2.12it/s]Loading data/labeled/train:  74%|███████▍  | 358/481 [01:13<00:56,  2.17it/s]Loading data/labeled/train:  75%|███████▍  | 359/481 [01:13<00:54,  2.23it/s]Loading data/labeled/train:  75%|███████▍  | 360/481 [01:14<00:54,  2.21it/s]Loading data/labeled/train:  75%|███████▌  | 361/481 [01:14<00:59,  2.03it/s]Loading data/labeled/train:  75%|███████▌  | 362/481 [01:14<00:46,  2.54it/s]Loading data/labeled/train:  75%|███████▌  | 363/481 [01:15<00:45,  2.61it/s]Loading data/labeled/train:  76%|███████▌  | 364/481 [01:15<00:42,  2.72it/s]Loading data/labeled/train:  76%|███████▌  | 365/481 [01:15<00:40,  2.85it/s]Loading data/labeled/train:  76%|███████▌  | 366/481 [01:16<00:39,  2.89it/s]Loading data/labeled/train:  76%|███████▋  | 367/481 [01:16<00:38,  2.96it/s]Loading data/labeled/train:  77%|███████▋  | 368/481 [01:16<00:39,  2.83it/s]Loading data/labeled/train:  77%|███████▋  | 369/481 [01:17<00:36,  3.06it/s]Loading data/labeled/train:  77%|███████▋  | 370/481 [01:17<00:36,  3.04it/s]Loading data/labeled/train:  77%|███████▋  | 371/481 [01:17<00:36,  3.04it/s]Loading data/labeled/train:  77%|███████▋  | 372/481 [01:18<00:40,  2.68it/s]Loading data/labeled/train:  78%|███████▊  | 373/481 [01:18<00:38,  2.82it/s]Loading data/labeled/train:  78%|███████▊  | 374/481 [01:18<00:37,  2.89it/s]Loading data/labeled/train:  78%|███████▊  | 375/481 [01:19<00:36,  2.94it/s]Loading data/labeled/train:  78%|███████▊  | 376/481 [01:19<00:36,  2.91it/s]Loading data/labeled/train:  78%|███████▊  | 377/481 [01:20<00:37,  2.75it/s]Loading data/labeled/train:  79%|███████▊  | 378/481 [01:20<00:38,  2.71it/s]Loading data/labeled/train:  79%|███████▉  | 379/481 [01:20<00:36,  2.82it/s]Loading data/labeled/train:  79%|███████▉  | 380/481 [01:21<00:34,  2.89it/s]Loading data/labeled/train:  79%|███████▉  | 381/481 [01:21<00:33,  2.95it/s]Loading data/labeled/train:  79%|███████▉  | 382/481 [01:21<00:39,  2.54it/s]Loading data/labeled/train:  80%|███████▉  | 383/481 [01:22<00:36,  2.70it/s]Loading data/labeled/train:  80%|███████▉  | 384/481 [01:22<00:34,  2.80it/s]Loading data/labeled/train:  80%|████████  | 385/481 [01:22<00:36,  2.62it/s]Loading data/labeled/train:  80%|████████  | 386/481 [01:23<00:35,  2.65it/s]Loading data/labeled/train:  80%|████████  | 387/481 [01:23<00:36,  2.58it/s]Loading data/labeled/train:  81%|████████  | 388/481 [01:24<00:35,  2.61it/s]Loading data/labeled/train:  81%|████████  | 389/481 [01:24<00:33,  2.72it/s]Loading data/labeled/train:  81%|████████  | 390/481 [01:24<00:33,  2.72it/s]Loading data/labeled/train:  81%|████████▏ | 391/481 [01:25<00:36,  2.50it/s]Loading data/labeled/train:  81%|████████▏ | 392/481 [01:25<00:33,  2.70it/s]Loading data/labeled/train:  82%|████████▏ | 393/481 [01:26<00:34,  2.58it/s]Loading data/labeled/train:  82%|████████▏ | 394/481 [01:26<00:36,  2.38it/s]Loading data/labeled/train:  82%|████████▏ | 395/481 [01:26<00:36,  2.36it/s]Loading data/labeled/train:  82%|████████▏ | 396/481 [01:27<00:36,  2.36it/s]Loading data/labeled/train:  83%|████████▎ | 397/481 [01:27<00:36,  2.29it/s]Loading data/labeled/train:  83%|████████▎ | 398/481 [01:28<00:41,  1.98it/s]Loading data/labeled/train:  83%|████████▎ | 399/481 [01:28<00:39,  2.05it/s]Loading data/labeled/train:  83%|████████▎ | 400/481 [01:29<00:38,  2.12it/s]Loading data/labeled/train:  83%|████████▎ | 401/481 [01:29<00:34,  2.34it/s]Loading data/labeled/train:  84%|████████▎ | 402/481 [01:30<00:31,  2.51it/s]Loading data/labeled/train:  84%|████████▍ | 403/481 [01:30<00:28,  2.78it/s]Loading data/labeled/train:  84%|████████▍ | 404/481 [01:30<00:30,  2.48it/s]Loading data/labeled/train:  84%|████████▍ | 405/481 [01:31<00:26,  2.82it/s]Loading data/labeled/train:  84%|████████▍ | 406/481 [01:31<00:22,  3.36it/s]Loading data/labeled/train:  85%|████████▍ | 407/481 [01:31<00:19,  3.84it/s]Loading data/labeled/train:  85%|████████▍ | 408/481 [01:31<00:17,  4.24it/s]Loading data/labeled/train:  85%|████████▌ | 409/481 [01:31<00:15,  4.52it/s]Loading data/labeled/train:  85%|████████▌ | 410/481 [01:31<00:14,  5.07it/s]Loading data/labeled/train:  86%|████████▌ | 412/481 [01:32<00:12,  5.41it/s]Loading data/labeled/train:  86%|████████▌ | 413/481 [01:32<00:13,  5.05it/s]Loading data/labeled/train:  86%|████████▌ | 414/481 [01:32<00:15,  4.34it/s]Loading data/labeled/train:  86%|████████▋ | 415/481 [01:33<00:14,  4.57it/s]Loading data/labeled/train:  86%|████████▋ | 416/481 [01:33<00:15,  4.19it/s]Loading data/labeled/train:  87%|████████▋ | 417/481 [01:33<00:17,  3.69it/s]Loading data/labeled/train:  87%|████████▋ | 418/481 [01:33<00:18,  3.48it/s]Loading data/labeled/train:  87%|████████▋ | 419/481 [01:34<00:18,  3.33it/s]Loading data/labeled/train:  87%|████████▋ | 420/481 [01:34<00:18,  3.34it/s]Loading data/labeled/train:  88%|████████▊ | 421/481 [01:34<00:17,  3.51it/s]Loading data/labeled/train:  88%|████████▊ | 422/481 [01:35<00:15,  3.72it/s]Loading data/labeled/train:  88%|████████▊ | 423/481 [01:35<00:15,  3.79it/s]Loading data/labeled/train:  88%|████████▊ | 424/481 [01:35<00:15,  3.61it/s]Loading data/labeled/train:  88%|████████▊ | 425/481 [01:35<00:16,  3.46it/s]Loading data/labeled/train:  89%|████████▊ | 426/481 [01:36<00:16,  3.32it/s]Loading data/labeled/train:  89%|████████▉ | 427/481 [01:36<00:16,  3.35it/s]Loading data/labeled/train:  89%|████████▉ | 428/481 [01:36<00:15,  3.53it/s]Loading data/labeled/train:  89%|████████▉ | 429/481 [01:37<00:16,  3.16it/s]Loading data/labeled/train:  89%|████████▉ | 430/481 [01:37<00:16,  3.14it/s]Loading data/labeled/train:  90%|████████▉ | 431/481 [01:37<00:16,  3.09it/s]Loading data/labeled/train:  90%|████████▉ | 432/481 [01:38<00:15,  3.11it/s]Loading data/labeled/train:  90%|█████████ | 433/481 [01:38<00:15,  3.18it/s]Loading data/labeled/train:  90%|█████████ | 434/481 [01:38<00:14,  3.16it/s]Loading data/labeled/train:  90%|█████████ | 435/481 [01:39<00:12,  3.59it/s]Loading data/labeled/train:  91%|█████████ | 436/481 [01:39<00:11,  4.02it/s]Loading data/labeled/train:  91%|█████████ | 437/481 [01:39<00:10,  4.37it/s]Loading data/labeled/train:  91%|█████████ | 438/481 [01:39<00:09,  4.53it/s]Loading data/labeled/train:  91%|█████████▏| 439/481 [01:39<00:08,  4.93it/s]Loading data/labeled/train:  91%|█████████▏| 440/481 [01:39<00:07,  5.15it/s]Loading data/labeled/train:  92%|█████████▏| 441/481 [01:40<00:08,  4.87it/s]Loading data/labeled/train:  92%|█████████▏| 442/481 [01:40<00:08,  4.69it/s]Loading data/labeled/train:  92%|█████████▏| 443/481 [01:40<00:07,  4.92it/s]Loading data/labeled/train:  92%|█████████▏| 444/481 [01:40<00:07,  5.10it/s]Loading data/labeled/train:  93%|█████████▎| 445/481 [01:41<00:10,  3.32it/s]Loading data/labeled/train:  93%|█████████▎| 446/481 [01:41<00:14,  2.49it/s]Loading data/labeled/train:  93%|█████████▎| 447/481 [01:42<00:15,  2.14it/s]Loading data/labeled/train:  93%|█████████▎| 448/481 [01:43<00:17,  1.85it/s]Loading data/labeled/train:  93%|█████████▎| 449/481 [01:43<00:14,  2.22it/s]Loading data/labeled/train:  94%|█████████▎| 450/481 [01:43<00:11,  2.68it/s]Loading data/labeled/train:  94%|█████████▍| 451/481 [01:44<00:11,  2.69it/s]Loading data/labeled/train:  94%|█████████▍| 452/481 [01:44<00:10,  2.67it/s]Loading data/labeled/train:  94%|█████████▍| 453/481 [01:44<00:10,  2.60it/s]Loading data/labeled/train:  94%|█████████▍| 454/481 [01:45<00:10,  2.55it/s]Loading data/labeled/train:  95%|█████████▍| 455/481 [01:45<00:08,  2.98it/s]Loading data/labeled/train:  95%|█████████▍| 456/481 [01:45<00:08,  3.12it/s]Loading data/labeled/train:  95%|█████████▌| 457/481 [01:46<00:07,  3.20it/s]Loading data/labeled/train:  95%|█████████▌| 458/481 [01:46<00:07,  3.07it/s]Loading data/labeled/train:  95%|█████████▌| 459/481 [01:46<00:07,  2.94it/s]Loading data/labeled/train:  96%|█████████▌| 460/481 [01:46<00:06,  3.28it/s]Loading data/labeled/train:  96%|█████████▌| 461/481 [01:47<00:06,  3.08it/s]Loading data/labeled/train:  96%|█████████▌| 462/481 [01:47<00:06,  2.83it/s]Loading data/labeled/train:  96%|█████████▋| 463/481 [01:48<00:06,  2.70it/s]Loading data/labeled/train:  96%|█████████▋| 464/481 [01:48<00:06,  2.59it/s]Loading data/labeled/train:  97%|█████████▋| 465/481 [01:49<00:06,  2.34it/s]Loading data/labeled/train:  97%|█████████▋| 466/481 [01:49<00:06,  2.31it/s]Loading data/labeled/train:  97%|█████████▋| 467/481 [01:49<00:05,  2.35it/s]Loading data/labeled/train:  97%|█████████▋| 468/481 [01:50<00:05,  2.32it/s]Loading data/labeled/train:  98%|█████████▊| 469/481 [01:50<00:05,  2.34it/s]Loading data/labeled/train:  98%|█████████▊| 470/481 [01:51<00:03,  2.77it/s]Loading data/labeled/train:  98%|█████████▊| 471/481 [01:51<00:03,  3.22it/s]Loading data/labeled/train:  98%|█████████▊| 472/481 [01:51<00:02,  3.64it/s]Loading data/labeled/train:  98%|█████████▊| 473/481 [01:52<00:03,  2.48it/s]Loading data/labeled/train:  99%|█████████▊| 474/481 [01:52<00:03,  1.90it/s]Loading data/labeled/train:  99%|█████████▉| 475/481 [01:53<00:03,  1.70it/s]Loading data/labeled/train:  99%|█████████▉| 476/481 [01:54<00:03,  1.63it/s]Loading data/labeled/train:  99%|█████████▉| 477/481 [01:55<00:02,  1.60it/s]Loading data/labeled/train:  99%|█████████▉| 478/481 [01:55<00:01,  1.54it/s]Loading data/labeled/train: 100%|█████████▉| 479/481 [01:56<00:01,  1.54it/s]Loading data/labeled/train: 100%|█████████▉| 480/481 [01:56<00:00,  1.55it/s]Loading data/labeled/train: 100%|██████████| 481/481 [01:57<00:00,  1.51it/s]Loading data/labeled/train: 100%|██████████| 481/481 [01:57<00:00,  4.09it/s]
+2026-04-17 20:27:17,096 - INFO - Epoch 1, Total: 0.002589, MSE: 0.002589, Orth: 0.000076
+2026-04-17 20:27:17,134 - INFO - Best model saved.
+2026-04-17 20:27:28,637 - INFO - Epoch 2, Total: 0.001355, MSE: 0.001355, Orth: 0.000021
+2026-04-17 20:27:28,639 - INFO - Best model saved.
+2026-04-17 20:27:40,503 - INFO - Epoch 3, Total: 0.001171, MSE: 0.001171, Orth: 0.000039
+2026-04-17 20:27:40,506 - INFO - Best model saved.
+2026-04-17 20:27:53,029 - INFO - Epoch 4, Total: 0.001115, MSE: 0.001115, Orth: 0.000042
+2026-04-17 20:27:53,031 - INFO - Best model saved.
+2026-04-17 20:28:04,613 - INFO - Epoch 5, Total: 0.001093, MSE: 0.001092, Orth: 0.000044
+2026-04-17 20:28:04,615 - INFO - Best model saved.
+2026-04-17 20:28:16,418 - INFO - Epoch 6, Total: 0.001056, MSE: 0.001056, Orth: 0.000041
+2026-04-17 20:28:16,420 - INFO - Best model saved.
+2026-04-17 20:28:27,902 - INFO - Epoch 7, Total: 0.001055, MSE: 0.001055, Orth: 0.000043
+2026-04-17 20:28:27,905 - INFO - Best model saved.
+2026-04-17 20:28:39,466 - INFO - Epoch 8, Total: 0.001037, MSE: 0.001036, Orth: 0.000042
+2026-04-17 20:28:39,468 - INFO - Best model saved.
+2026-04-17 20:28:51,596 - INFO - Epoch 9, Total: 0.001033, MSE: 0.001033, Orth: 0.000041
+2026-04-17 20:28:51,599 - INFO - Best model saved.
+2026-04-17 20:29:03,363 - INFO - Epoch 10, Total: 0.001016, MSE: 0.001016, Orth: 0.000038
+2026-04-17 20:29:03,366 - INFO - Best model saved.
+2026-04-17 20:29:14,864 - INFO - Epoch 11, Total: 0.001010, MSE: 0.001010, Orth: 0.000040
+2026-04-17 20:29:14,866 - INFO - Best model saved.
+2026-04-17 20:29:26,312 - INFO - Epoch 12, Total: 0.000982, MSE: 0.000981, Orth: 0.000038
+2026-04-17 20:29:26,315 - INFO - Best model saved.
+2026-04-17 20:29:38,228 - INFO - Epoch 13, Total: 0.000981, MSE: 0.000980, Orth: 0.000036
+2026-04-17 20:29:49,648 - INFO - Epoch 14, Total: 0.000989, MSE: 0.000988, Orth: 0.000036
+2026-04-17 20:30:01,641 - INFO - Epoch 15, Total: 0.000981, MSE: 0.000981, Orth: 0.000035
+2026-04-17 20:30:13,482 - INFO - Epoch 16, Total: 0.000950, MSE: 0.000949, Orth: 0.000032
+2026-04-17 20:30:13,485 - INFO - Best model saved.
+2026-04-17 20:30:25,035 - INFO - Epoch 17, Total: 0.000958, MSE: 0.000958, Orth: 0.000031
+2026-04-17 20:30:36,775 - INFO - Epoch 18, Total: 0.000949, MSE: 0.000948, Orth: 0.000030
+2026-04-17 20:30:50,551 - INFO - Epoch 19, Total: 0.000928, MSE: 0.000928, Orth: 0.000026
+2026-04-17 20:30:50,555 - INFO - Best model saved.
+2026-04-17 20:31:04,422 - INFO - Epoch 20, Total: 0.000949, MSE: 0.000948, Orth: 0.000032
+2026-04-17 20:31:18,065 - INFO - Epoch 21, Total: 0.000923, MSE: 0.000922, Orth: 0.000031
+2026-04-17 20:31:18,068 - INFO - Best model saved.
+2026-04-17 20:31:31,208 - INFO - Epoch 22, Total: 0.000930, MSE: 0.000929, Orth: 0.000030
+2026-04-17 20:31:43,886 - INFO - Epoch 23, Total: 0.000928, MSE: 0.000928, Orth: 0.000029
+2026-04-17 20:31:56,313 - INFO - Epoch 24, Total: 0.000912, MSE: 0.000912, Orth: 0.000028
+2026-04-17 20:31:56,316 - INFO - Best model saved.
+2026-04-17 20:32:09,447 - INFO - Epoch 25, Total: 0.000903, MSE: 0.000903, Orth: 0.000027
+2026-04-17 20:32:09,450 - INFO - Best model saved.
+2026-04-17 20:32:23,815 - INFO - Epoch 26, Total: 0.000909, MSE: 0.000909, Orth: 0.000028
+2026-04-17 20:32:37,136 - INFO - Epoch 27, Total: 0.000891, MSE: 0.000891, Orth: 0.000029
+2026-04-17 20:32:37,139 - INFO - Best model saved.
+2026-04-17 20:32:49,908 - INFO - Epoch 28, Total: 0.000891, MSE: 0.000891, Orth: 0.000026
+2026-04-17 20:33:02,964 - INFO - Epoch 29, Total: 0.000892, MSE: 0.000891, Orth: 0.000029
+2026-04-17 20:33:16,357 - INFO - Epoch 30, Total: 0.000885, MSE: 0.000885, Orth: 0.000025
+2026-04-17 20:33:16,360 - INFO - Best model saved.
+2026-04-17 20:33:29,794 - INFO - Epoch 31, Total: 0.000885, MSE: 0.000884, Orth: 0.000025
+2026-04-17 20:33:42,343 - INFO - Epoch 32, Total: 0.000874, MSE: 0.000873, Orth: 0.000027
+2026-04-17 20:33:42,346 - INFO - Best model saved.
+2026-04-17 20:33:54,777 - INFO - Epoch 33, Total: 0.000882, MSE: 0.000882, Orth: 0.000031
+2026-04-17 20:34:07,148 - INFO - Epoch 34, Total: 0.000865, MSE: 0.000864, Orth: 0.000028
+2026-04-17 20:34:07,151 - INFO - Best model saved.
+2026-04-17 20:34:19,734 - INFO - Epoch 35, Total: 0.000863, MSE: 0.000862, Orth: 0.000027
+2026-04-17 20:34:19,737 - INFO - Best model saved.
+2026-04-17 20:34:34,151 - INFO - Epoch 36, Total: 0.000864, MSE: 0.000864, Orth: 0.000028
+2026-04-17 20:34:46,974 - INFO - Epoch 37, Total: 0.000860, MSE: 0.000860, Orth: 0.000025
+2026-04-17 20:34:46,977 - INFO - Best model saved.
+2026-04-17 20:34:59,496 - INFO - Epoch 38, Total: 0.000862, MSE: 0.000861, Orth: 0.000028
+2026-04-17 20:35:13,149 - INFO - Epoch 39, Total: 0.000859, MSE: 0.000859, Orth: 0.000024
+2026-04-17 20:35:26,389 - INFO - Epoch 40, Total: 0.000857, MSE: 0.000857, Orth: 0.000026
+2026-04-17 20:35:26,393 - INFO - Best model saved.
+2026-04-17 20:35:40,987 - INFO - Epoch 41, Total: 0.000855, MSE: 0.000854, Orth: 0.000024
+2026-04-17 20:35:40,989 - INFO - Best model saved.
+2026-04-17 20:35:53,716 - INFO - Epoch 42, Total: 0.000850, MSE: 0.000850, Orth: 0.000025
+2026-04-17 20:35:53,719 - INFO - Best model saved.
+2026-04-17 20:36:07,025 - INFO - Epoch 43, Total: 0.000851, MSE: 0.000851, Orth: 0.000025
+2026-04-17 20:36:19,867 - INFO - Epoch 44, Total: 0.000874, MSE: 0.000874, Orth: 0.000031
+2026-04-17 20:36:32,250 - INFO - Epoch 45, Total: 0.000867, MSE: 0.000867, Orth: 0.000026
+2026-04-17 20:36:45,815 - INFO - Epoch 46, Total: 0.000847, MSE: 0.000847, Orth: 0.000025
+2026-04-17 20:36:45,817 - INFO - Best model saved.
+2026-04-17 20:36:58,775 - INFO - Epoch 47, Total: 0.000858, MSE: 0.000858, Orth: 0.000025
+2026-04-17 20:37:11,251 - INFO - Epoch 48, Total: 0.000846, MSE: 0.000846, Orth: 0.000025
+2026-04-17 20:37:23,551 - INFO - Epoch 49, Total: 0.000848, MSE: 0.000848, Orth: 0.000026
+2026-04-17 20:37:36,022 - INFO - Epoch 50, Total: 0.000840, MSE: 0.000839, Orth: 0.000028
+2026-04-17 20:37:36,024 - INFO - Best model saved.
+2026-04-17 20:37:50,313 - INFO - Epoch 51, Total: 0.000836, MSE: 0.000836, Orth: 0.000023
+2026-04-17 20:37:50,315 - INFO - Best model saved.
+2026-04-17 20:38:03,600 - INFO - Epoch 52, Total: 0.000839, MSE: 0.000838, Orth: 0.000027
+2026-04-17 20:38:17,438 - INFO - Epoch 53, Total: 0.000844, MSE: 0.000844, Orth: 0.000025
+2026-04-17 20:38:30,456 - INFO - Epoch 54, Total: 0.000841, MSE: 0.000841, Orth: 0.000026
+2026-04-17 20:38:43,512 - INFO - Epoch 55, Total: 0.000840, MSE: 0.000840, Orth: 0.000025
+2026-04-17 20:38:57,992 - INFO - Epoch 56, Total: 0.000847, MSE: 0.000847, Orth: 0.000026
+2026-04-17 20:39:10,589 - INFO - Epoch 57, Total: 0.000833, MSE: 0.000833, Orth: 0.000026
+2026-04-17 20:39:10,592 - INFO - Best model saved.
+2026-04-17 20:39:23,012 - INFO - Epoch 58, Total: 0.000846, MSE: 0.000846, Orth: 0.000025
+2026-04-17 20:39:35,680 - INFO - Epoch 59, Total: 0.000828, MSE: 0.000827, Orth: 0.000026
+2026-04-17 20:39:35,683 - INFO - Best model saved.
+2026-04-17 20:39:48,118 - INFO - Epoch 60, Total: 0.000838, MSE: 0.000837, Orth: 0.000025
+2026-04-17 20:40:01,209 - INFO - Epoch 61, Total: 0.000838, MSE: 0.000838, Orth: 0.000025
+2026-04-17 20:40:14,631 - INFO - Epoch 62, Total: 0.000845, MSE: 0.000844, Orth: 0.000026
+2026-04-17 20:40:28,002 - INFO - Epoch 63, Total: 0.000836, MSE: 0.000835, Orth: 0.000024
+2026-04-17 20:40:40,466 - INFO - Epoch 64, Total: 0.000840, MSE: 0.000840, Orth: 0.000026
+2026-04-17 20:40:52,764 - INFO - Epoch 65, Total: 0.000827, MSE: 0.000827, Orth: 0.000024
+2026-04-17 20:41:05,562 - INFO - Epoch 66, Total: 0.000812, MSE: 0.000812, Orth: 0.000025
+2026-04-17 20:41:05,565 - INFO - Best model saved.
+2026-04-17 20:41:18,488 - INFO - Epoch 67, Total: 0.000830, MSE: 0.000830, Orth: 0.000024
+2026-04-17 20:41:31,483 - INFO - Epoch 68, Total: 0.000839, MSE: 0.000839, Orth: 0.000025
+2026-04-17 20:41:44,680 - INFO - Epoch 69, Total: 0.000826, MSE: 0.000826, Orth: 0.000024
+2026-04-17 20:41:58,004 - INFO - Epoch 70, Total: 0.000824, MSE: 0.000824, Orth: 0.000026
+2026-04-17 20:42:11,008 - INFO - Epoch 71, Total: 0.000831, MSE: 0.000831, Orth: 0.000024
+2026-04-17 20:42:24,946 - INFO - Epoch 72, Total: 0.000826, MSE: 0.000826, Orth: 0.000023
+2026-04-17 20:42:38,182 - INFO - Epoch 73, Total: 0.000821, MSE: 0.000821, Orth: 0.000023
+2026-04-17 20:42:51,489 - INFO - Epoch 74, Total: 0.000823, MSE: 0.000823, Orth: 0.000023
+2026-04-17 20:43:03,957 - INFO - Epoch 75, Total: 0.000815, MSE: 0.000815, Orth: 0.000023
+2026-04-17 20:43:16,635 - INFO - Epoch 76, Total: 0.000818, MSE: 0.000818, Orth: 0.000023
+2026-04-17 20:43:30,655 - INFO - Epoch 77, Total: 0.000825, MSE: 0.000825, Orth: 0.000024
+2026-04-17 20:43:43,338 - INFO - Epoch 78, Total: 0.000814, MSE: 0.000814, Orth: 0.000023
+2026-04-17 20:43:55,790 - INFO - Epoch 79, Total: 0.000831, MSE: 0.000831, Orth: 0.000022
+2026-04-17 20:44:08,484 - INFO - Epoch 80, Total: 0.000818, MSE: 0.000818, Orth: 0.000022
+2026-04-17 20:44:20,979 - INFO - Epoch 81, Total: 0.000825, MSE: 0.000824, Orth: 0.000022
+2026-04-17 20:44:35,372 - INFO - Epoch 82, Total: 0.000815, MSE: 0.000814, Orth: 0.000021
+2026-04-17 20:44:48,125 - INFO - Epoch 83, Total: 0.000821, MSE: 0.000821, Orth: 0.000022
+2026-04-17 20:45:00,788 - INFO - Epoch 84, Total: 0.000810, MSE: 0.000810, Orth: 0.000020
+2026-04-17 20:45:00,791 - INFO - Best model saved.
+2026-04-17 20:45:13,267 - INFO - Epoch 85, Total: 0.000812, MSE: 0.000812, Orth: 0.000021
+2026-04-17 20:45:25,800 - INFO - Epoch 86, Total: 0.000826, MSE: 0.000826, Orth: 0.000022
+2026-04-17 20:45:39,693 - INFO - Epoch 87, Total: 0.000818, MSE: 0.000817, Orth: 0.000021
+2026-04-17 20:45:54,562 - INFO - Epoch 88, Total: 0.000816, MSE: 0.000815, Orth: 0.000020
+2026-04-17 20:46:08,012 - INFO - Epoch 89, Total: 0.000822, MSE: 0.000822, Orth: 0.000023
+2026-04-17 20:46:20,892 - INFO - Epoch 90, Total: 0.000800, MSE: 0.000800, Orth: 0.000021
+2026-04-17 20:46:20,895 - INFO - Best model saved.
+2026-04-17 20:46:33,775 - INFO - Epoch 91, Total: 0.000824, MSE: 0.000824, Orth: 0.000024
+2026-04-17 20:46:48,449 - INFO - Epoch 92, Total: 0.000826, MSE: 0.000826, Orth: 0.000021
+2026-04-17 20:47:01,825 - INFO - Epoch 93, Total: 0.000815, MSE: 0.000815, Orth: 0.000022
+2026-04-17 20:47:15,133 - INFO - Epoch 94, Total: 0.000821, MSE: 0.000821, Orth: 0.000020
+2026-04-17 20:47:28,203 - INFO - Epoch 95, Total: 0.000819, MSE: 0.000819, Orth: 0.000021
+2026-04-17 20:47:40,867 - INFO - Epoch 96, Total: 0.000810, MSE: 0.000810, Orth: 0.000022
+2026-04-17 20:47:55,873 - INFO - Epoch 97, Total: 0.000810, MSE: 0.000810, Orth: 0.000022
+2026-04-17 20:48:09,112 - INFO - Epoch 98, Total: 0.000815, MSE: 0.000814, Orth: 0.000023
+2026-04-17 20:48:22,268 - INFO - Epoch 99, Total: 0.000816, MSE: 0.000815, Orth: 0.000020
+2026-04-17 20:48:35,524 - INFO - Epoch 100, Total: 0.000809, MSE: 0.000809, Orth: 0.000021
+2026-04-17 20:48:48,233 - INFO - Epoch 101, Total: 0.000817, MSE: 0.000816, Orth: 0.000021
+2026-04-17 20:49:02,555 - INFO - Epoch 102, Total: 0.000814, MSE: 0.000813, Orth: 0.000025
+2026-04-17 20:49:15,589 - INFO - Epoch 103, Total: 0.000824, MSE: 0.000824, Orth: 0.000024
+2026-04-17 20:49:29,073 - INFO - Epoch 104, Total: 0.000818, MSE: 0.000818, Orth: 0.000021
+2026-04-17 20:49:41,452 - INFO - Epoch 105, Total: 0.000810, MSE: 0.000810, Orth: 0.000022
+2026-04-17 20:49:54,402 - INFO - Epoch 106, Total: 0.000806, MSE: 0.000806, Orth: 0.000020
+2026-04-17 20:50:08,087 - INFO - Epoch 107, Total: 0.000812, MSE: 0.000812, Orth: 0.000022
+2026-04-17 20:50:22,222 - INFO - Epoch 108, Total: 0.000816, MSE: 0.000816, Orth: 0.000021
+2026-04-17 20:50:35,737 - INFO - Epoch 109, Total: 0.000827, MSE: 0.000827, Orth: 0.000023
+2026-04-17 20:50:49,473 - INFO - Epoch 110, Total: 0.000817, MSE: 0.000817, Orth: 0.000022
+2026-04-17 20:51:02,562 - INFO - Epoch 111, Total: 0.000805, MSE: 0.000805, Orth: 0.000022
+2026-04-17 20:51:16,861 - INFO - Epoch 112, Total: 0.000691, MSE: 0.000691, Orth: 0.000012
+2026-04-17 20:51:16,864 - INFO - Best model saved.
+2026-04-17 20:51:31,077 - INFO - Epoch 113, Total: 0.000676, MSE: 0.000675, Orth: 0.000012
+2026-04-17 20:51:31,080 - INFO - Best model saved.
+2026-04-17 20:51:45,041 - INFO - Epoch 114, Total: 0.000667, MSE: 0.000667, Orth: 0.000011
+2026-04-17 20:51:45,044 - INFO - Best model saved.
+2026-04-17 20:51:58,813 - INFO - Epoch 115, Total: 0.000676, MSE: 0.000676, Orth: 0.000010
+2026-04-17 20:52:11,157 - INFO - Epoch 116, Total: 0.000669, MSE: 0.000669, Orth: 0.000010
+2026-04-17 20:52:25,797 - INFO - Epoch 117, Total: 0.000665, MSE: 0.000665, Orth: 0.000010
+2026-04-17 20:52:25,800 - INFO - Best model saved.
+2026-04-17 20:52:39,136 - INFO - Epoch 118, Total: 0.000658, MSE: 0.000658, Orth: 0.000011
+2026-04-17 20:52:39,139 - INFO - Best model saved.
+2026-04-17 20:52:51,791 - INFO - Epoch 119, Total: 0.000653, MSE: 0.000653, Orth: 0.000010
+2026-04-17 20:52:51,794 - INFO - Best model saved.
+2026-04-17 20:53:05,263 - INFO - Epoch 120, Total: 0.000655, MSE: 0.000655, Orth: 0.000010
+2026-04-17 20:53:19,117 - INFO - Epoch 121, Total: 0.000655, MSE: 0.000654, Orth: 0.000010
+2026-04-17 20:53:32,611 - INFO - Epoch 122, Total: 0.000650, MSE: 0.000650, Orth: 0.000010
+2026-04-17 20:53:32,614 - INFO - Best model saved.
+2026-04-17 20:53:45,074 - INFO - Epoch 123, Total: 0.000650, MSE: 0.000649, Orth: 0.000010
+2026-04-17 20:53:57,831 - INFO - Epoch 124, Total: 0.000646, MSE: 0.000646, Orth: 0.000009
+2026-04-17 20:53:57,834 - INFO - Best model saved.
+2026-04-17 20:54:10,561 - INFO - Epoch 125, Total: 0.000633, MSE: 0.000633, Orth: 0.000009
+2026-04-17 20:54:10,564 - INFO - Best model saved.
+2026-04-17 20:54:23,028 - INFO - Epoch 126, Total: 0.000645, MSE: 0.000645, Orth: 0.000008
+2026-04-17 20:54:37,148 - INFO - Epoch 127, Total: 0.000633, MSE: 0.000633, Orth: 0.000008
+2026-04-17 20:54:49,829 - INFO - Epoch 128, Total: 0.000634, MSE: 0.000634, Orth: 0.000009
+2026-04-17 20:55:02,378 - INFO - Epoch 129, Total: 0.000629, MSE: 0.000629, Orth: 0.000009
+2026-04-17 20:55:02,381 - INFO - Best model saved.
+2026-04-17 20:55:14,368 - INFO - Epoch 130, Total: 0.000637, MSE: 0.000636, Orth: 0.000008
+2026-04-17 20:55:26,654 - INFO - Epoch 131, Total: 0.000630, MSE: 0.000629, Orth: 0.000008
+2026-04-17 20:55:39,099 - INFO - Epoch 132, Total: 0.000628, MSE: 0.000628, Orth: 0.000008
+2026-04-17 20:55:52,434 - INFO - Epoch 133, Total: 0.000628, MSE: 0.000628, Orth: 0.000007
+2026-04-17 20:56:04,888 - INFO - Epoch 134, Total: 0.000624, MSE: 0.000624, Orth: 0.000008
+2026-04-17 20:56:04,890 - INFO - Best model saved.
+2026-04-17 20:56:17,359 - INFO - Epoch 135, Total: 0.000625, MSE: 0.000625, Orth: 0.000007
+2026-04-17 20:56:29,896 - INFO - Epoch 136, Total: 0.000620, MSE: 0.000620, Orth: 0.000007
+2026-04-17 20:56:29,898 - INFO - Best model saved.
+2026-04-17 20:56:42,650 - INFO - Epoch 137, Total: 0.000626, MSE: 0.000626, Orth: 0.000008
+2026-04-17 20:56:56,399 - INFO - Epoch 138, Total: 0.000616, MSE: 0.000616, Orth: 0.000007
+2026-04-17 20:56:56,402 - INFO - Best model saved.
+2026-04-17 20:57:09,205 - INFO - Epoch 139, Total: 0.000624, MSE: 0.000624, Orth: 0.000007
+2026-04-17 20:57:21,531 - INFO - Epoch 140, Total: 0.000619, MSE: 0.000619, Orth: 0.000007
+2026-04-17 20:57:33,817 - INFO - Epoch 141, Total: 0.000616, MSE: 0.000616, Orth: 0.000007
+2026-04-17 20:57:45,941 - INFO - Epoch 142, Total: 0.000616, MSE: 0.000616, Orth: 0.000007
+2026-04-17 20:57:59,555 - INFO - Epoch 143, Total: 0.000617, MSE: 0.000617, Orth: 0.000007
+2026-04-17 20:58:11,713 - INFO - Epoch 144, Total: 0.000609, MSE: 0.000609, Orth: 0.000006
+2026-04-17 20:58:11,716 - INFO - Best model saved.
+2026-04-17 20:58:26,422 - INFO - Epoch 145, Total: 0.000621, MSE: 0.000621, Orth: 0.000006
+2026-04-17 20:58:39,101 - INFO - Epoch 146, Total: 0.000611, MSE: 0.000611, Orth: 0.000006
+2026-04-17 20:58:51,094 - INFO - Epoch 147, Total: 0.000615, MSE: 0.000615, Orth: 0.000006
+2026-04-17 20:59:05,250 - INFO - Epoch 148, Total: 0.000612, MSE: 0.000612, Orth: 0.000007
+2026-04-17 20:59:18,634 - INFO - Epoch 149, Total: 0.000615, MSE: 0.000615, Orth: 0.000006
+2026-04-17 20:59:31,052 - INFO - Epoch 150, Total: 0.000616, MSE: 0.000616, Orth: 0.000006
+2026-04-17 20:59:43,529 - INFO - Epoch 151, Total: 0.000611, MSE: 0.000611, Orth: 0.000005
+2026-04-17 20:59:56,252 - INFO - Epoch 152, Total: 0.000604, MSE: 0.000603, Orth: 0.000006
+2026-04-17 20:59:56,256 - INFO - Best model saved.
+2026-04-17 21:00:09,779 - INFO - Epoch 153, Total: 0.000609, MSE: 0.000609, Orth: 0.000006
+2026-04-17 21:00:21,998 - INFO - Epoch 154, Total: 0.000604, MSE: 0.000604, Orth: 0.000005
+2026-04-17 21:00:33,839 - INFO - Epoch 155, Total: 0.000609, MSE: 0.000609, Orth: 0.000006
+2026-04-17 21:00:45,878 - INFO - Epoch 156, Total: 0.000608, MSE: 0.000608, Orth: 0.000005
+2026-04-17 21:00:57,507 - INFO - Epoch 157, Total: 0.000607, MSE: 0.000607, Orth: 0.000005
+2026-04-17 21:01:09,692 - INFO - Epoch 158, Total: 0.000614, MSE: 0.000613, Orth: 0.000006
+2026-04-17 21:01:22,541 - INFO - Epoch 159, Total: 0.000608, MSE: 0.000608, Orth: 0.000005
+2026-04-17 21:01:35,055 - INFO - Epoch 160, Total: 0.000604, MSE: 0.000604, Orth: 0.000005
+2026-04-17 21:01:47,019 - INFO - Epoch 161, Total: 0.000599, MSE: 0.000599, Orth: 0.000006
+2026-04-17 21:01:47,022 - INFO - Best model saved.
+2026-04-17 21:01:58,682 - INFO - Epoch 162, Total: 0.000597, MSE: 0.000597, Orth: 0.000005
+2026-04-17 21:01:58,685 - INFO - Best model saved.
+2026-04-17 21:02:10,384 - INFO - Epoch 163, Total: 0.000605, MSE: 0.000605, Orth: 0.000005
+2026-04-17 21:02:24,208 - INFO - Epoch 164, Total: 0.000601, MSE: 0.000601, Orth: 0.000005
+2026-04-17 21:02:37,599 - INFO - Epoch 165, Total: 0.000598, MSE: 0.000598, Orth: 0.000005
+2026-04-17 21:02:49,713 - INFO - Epoch 166, Total: 0.000596, MSE: 0.000596, Orth: 0.000005
+2026-04-17 21:02:49,716 - INFO - Best model saved.
+2026-04-17 21:03:01,517 - INFO - Epoch 167, Total: 0.000596, MSE: 0.000596, Orth: 0.000005
+2026-04-17 21:03:13,226 - INFO - Epoch 168, Total: 0.000595, MSE: 0.000595, Orth: 0.000005
+2026-04-17 21:03:13,228 - INFO - Best model saved.
+2026-04-17 21:03:25,660 - INFO - Epoch 169, Total: 0.000598, MSE: 0.000598, Orth: 0.000005
+2026-04-17 21:03:37,691 - INFO - Epoch 170, Total: 0.000594, MSE: 0.000594, Orth: 0.000005
+2026-04-17 21:03:49,482 - INFO - Epoch 171, Total: 0.000595, MSE: 0.000595, Orth: 0.000005
+2026-04-17 21:04:01,193 - INFO - Epoch 172, Total: 0.000591, MSE: 0.000590, Orth: 0.000005
+2026-04-17 21:04:01,196 - INFO - Best model saved.
+2026-04-17 21:04:12,813 - INFO - Epoch 173, Total: 0.000596, MSE: 0.000596, Orth: 0.000006
+2026-04-17 21:04:24,428 - INFO - Epoch 174, Total: 0.000597, MSE: 0.000597, Orth: 0.000005
+2026-04-17 21:04:37,152 - INFO - Epoch 175, Total: 0.000594, MSE: 0.000594, Orth: 0.000005
+2026-04-17 21:04:49,094 - INFO - Epoch 176, Total: 0.000586, MSE: 0.000586, Orth: 0.000005
+2026-04-17 21:04:49,096 - INFO - Best model saved.
+2026-04-17 21:05:01,121 - INFO - Epoch 177, Total: 0.000588, MSE: 0.000588, Orth: 0.000005
+2026-04-17 21:05:12,812 - INFO - Epoch 178, Total: 0.000588, MSE: 0.000588, Orth: 0.000005
+2026-04-17 21:05:24,497 - INFO - Epoch 179, Total: 0.000595, MSE: 0.000595, Orth: 0.000005
+2026-04-17 21:05:36,634 - INFO - Epoch 180, Total: 0.000593, MSE: 0.000593, Orth: 0.000005
+2026-04-17 21:05:49,465 - INFO - Epoch 181, Total: 0.000592, MSE: 0.000592, Orth: 0.000005
+2026-04-17 21:06:01,377 - INFO - Epoch 182, Total: 0.000585, MSE: 0.000585, Orth: 0.000005
+2026-04-17 21:06:01,379 - INFO - Best model saved.
+2026-04-17 21:06:13,265 - INFO - Epoch 183, Total: 0.000588, MSE: 0.000588, Orth: 0.000005
+2026-04-17 21:06:25,418 - INFO - Epoch 184, Total: 0.000597, MSE: 0.000597, Orth: 0.000005
+2026-04-17 21:06:37,884 - INFO - Epoch 185, Total: 0.000588, MSE: 0.000588, Orth: 0.000005
+2026-04-17 21:06:50,404 - INFO - Epoch 186, Total: 0.000588, MSE: 0.000588, Orth: 0.000005
+2026-04-17 21:07:02,112 - INFO - Epoch 187, Total: 0.000595, MSE: 0.000595, Orth: 0.000005
+2026-04-17 21:07:13,750 - INFO - Epoch 188, Total: 0.000595, MSE: 0.000594, Orth: 0.000005
+2026-04-17 21:07:25,280 - INFO - Epoch 189, Total: 0.000589, MSE: 0.000589, Orth: 0.000005
+2026-04-17 21:07:36,806 - INFO - Epoch 190, Total: 0.000591, MSE: 0.000591, Orth: 0.000004
+2026-04-17 21:07:48,567 - INFO - Epoch 191, Total: 0.000586, MSE: 0.000586, Orth: 0.000005
+2026-04-17 21:08:01,554 - INFO - Epoch 192, Total: 0.000587, MSE: 0.000587, Orth: 0.000005
+2026-04-17 21:08:13,575 - INFO - Epoch 193, Total: 0.000585, MSE: 0.000585, Orth: 0.000005
+2026-04-17 21:08:25,310 - INFO - Epoch 194, Total: 0.000586, MSE: 0.000586, Orth: 0.000005
+2026-04-17 21:08:37,326 - INFO - Epoch 195, Total: 0.000587, MSE: 0.000587, Orth: 0.000005
+2026-04-17 21:08:49,443 - INFO - Epoch 196, Total: 0.000583, MSE: 0.000583, Orth: 0.000004
+2026-04-17 21:08:49,446 - INFO - Best model saved.
+2026-04-17 21:09:02,041 - INFO - Epoch 197, Total: 0.000587, MSE: 0.000587, Orth: 0.000005
+2026-04-17 21:09:14,291 - INFO - Epoch 198, Total: 0.000585, MSE: 0.000585, Orth: 0.000004
+2026-04-17 21:09:25,965 - INFO - Epoch 199, Total: 0.000585, MSE: 0.000584, Orth: 0.000005
+2026-04-17 21:09:37,650 - INFO - Epoch 200, Total: 0.000583, MSE: 0.000583, Orth: 0.000005
+2026-04-17 21:09:49,320 - INFO - Epoch 201, Total: 0.000587, MSE: 0.000587, Orth: 0.000004
+2026-04-17 21:10:00,988 - INFO - Epoch 202, Total: 0.000579, MSE: 0.000579, Orth: 0.000005
+2026-04-17 21:10:00,990 - INFO - Best model saved.
+2026-04-17 21:10:12,946 - INFO - Epoch 203, Total: 0.000571, MSE: 0.000571, Orth: 0.000004
+2026-04-17 21:10:12,948 - INFO - Best model saved.
+2026-04-17 21:10:24,731 - INFO - Epoch 204, Total: 0.000585, MSE: 0.000585, Orth: 0.000005
+2026-04-17 21:10:36,522 - INFO - Epoch 205, Total: 0.000588, MSE: 0.000588, Orth: 0.000005
+2026-04-17 21:10:48,208 - INFO - Epoch 206, Total: 0.000580, MSE: 0.000580, Orth: 0.000005
+2026-04-17 21:11:00,083 - INFO - Epoch 207, Total: 0.000582, MSE: 0.000582, Orth: 0.000005
+2026-04-17 21:11:12,589 - INFO - Epoch 208, Total: 0.000577, MSE: 0.000577, Orth: 0.000004
+2026-04-17 21:11:24,517 - INFO - Epoch 209, Total: 0.000591, MSE: 0.000591, Orth: 0.000005
+2026-04-17 21:11:36,177 - INFO - Epoch 210, Total: 0.000578, MSE: 0.000578, Orth: 0.000005
+2026-04-17 21:11:47,877 - INFO - Epoch 211, Total: 0.000585, MSE: 0.000585, Orth: 0.000004
+2026-04-17 21:11:59,557 - INFO - Epoch 212, Total: 0.000585, MSE: 0.000585, Orth: 0.000005
+2026-04-17 21:12:11,311 - INFO - Epoch 213, Total: 0.000578, MSE: 0.000578, Orth: 0.000004
+2026-04-17 21:12:24,097 - INFO - Epoch 214, Total: 0.000573, MSE: 0.000573, Orth: 0.000004
+2026-04-17 21:12:36,600 - INFO - Epoch 215, Total: 0.000576, MSE: 0.000576, Orth: 0.000004
+2026-04-17 21:12:48,360 - INFO - Epoch 216, Total: 0.000574, MSE: 0.000574, Orth: 0.000004
+2026-04-17 21:13:00,111 - INFO - Epoch 217, Total: 0.000583, MSE: 0.000583, Orth: 0.000005
+2026-04-17 21:13:11,945 - INFO - Epoch 218, Total: 0.000579, MSE: 0.000578, Orth: 0.000005
+2026-04-17 21:13:24,151 - INFO - Epoch 219, Total: 0.000575, MSE: 0.000575, Orth: 0.000004
+2026-04-17 21:13:36,893 - INFO - Epoch 220, Total: 0.000575, MSE: 0.000575, Orth: 0.000004
+2026-04-17 21:13:49,031 - INFO - Epoch 221, Total: 0.000579, MSE: 0.000579, Orth: 0.000004
+2026-04-17 21:14:00,858 - INFO - Epoch 222, Total: 0.000575, MSE: 0.000575, Orth: 0.000005
+2026-04-17 21:14:12,722 - INFO - Epoch 223, Total: 0.000577, MSE: 0.000577, Orth: 0.000004
+2026-04-17 21:14:24,823 - INFO - Epoch 224, Total: 0.000579, MSE: 0.000579, Orth: 0.000004
+2026-04-17 21:14:37,808 - INFO - Epoch 225, Total: 0.000539, MSE: 0.000539, Orth: 0.000005
+2026-04-17 21:14:37,811 - INFO - Best model saved.
+2026-04-17 21:14:49,720 - INFO - Epoch 226, Total: 0.000537, MSE: 0.000537, Orth: 0.000005
+2026-04-17 21:14:49,723 - INFO - Best model saved.
+2026-04-17 21:15:01,333 - INFO - Epoch 227, Total: 0.000530, MSE: 0.000530, Orth: 0.000006
+2026-04-17 21:15:01,336 - INFO - Best model saved.
+2026-04-17 21:15:12,888 - INFO - Epoch 228, Total: 0.000539, MSE: 0.000539, Orth: 0.000007
+2026-04-17 21:15:24,438 - INFO - Epoch 229, Total: 0.000523, MSE: 0.000523, Orth: 0.000007
+2026-04-17 21:15:24,441 - INFO - Best model saved.
+2026-04-17 21:15:36,198 - INFO - Epoch 230, Total: 0.000533, MSE: 0.000532, Orth: 0.000007
+2026-04-17 21:15:49,009 - INFO - Epoch 231, Total: 0.000535, MSE: 0.000535, Orth: 0.000007
+2026-04-17 21:16:00,905 - INFO - Epoch 232, Total: 0.000532, MSE: 0.000532, Orth: 0.000007
+2026-04-17 21:16:12,669 - INFO - Epoch 233, Total: 0.000533, MSE: 0.000533, Orth: 0.000007
+2026-04-17 21:16:24,408 - INFO - Epoch 234, Total: 0.000525, MSE: 0.000525, Orth: 0.000007
+2026-04-17 21:16:36,308 - INFO - Epoch 235, Total: 0.000528, MSE: 0.000528, Orth: 0.000007
+2026-04-17 21:16:49,256 - INFO - Epoch 236, Total: 0.000526, MSE: 0.000526, Orth: 0.000007
+2026-04-17 21:17:01,651 - INFO - Epoch 237, Total: 0.000535, MSE: 0.000535, Orth: 0.000006
+2026-04-17 21:17:13,520 - INFO - Epoch 238, Total: 0.000534, MSE: 0.000534, Orth: 0.000006
+2026-04-17 21:17:25,224 - INFO - Epoch 239, Total: 0.000528, MSE: 0.000528, Orth: 0.000006
+2026-04-17 21:17:36,965 - INFO - Epoch 240, Total: 0.000531, MSE: 0.000530, Orth: 0.000006
+2026-04-17 21:17:48,673 - INFO - Epoch 241, Total: 0.000526, MSE: 0.000526, Orth: 0.000006
+2026-04-17 21:18:01,086 - INFO - Epoch 242, Total: 0.000530, MSE: 0.000530, Orth: 0.000006
+2026-04-17 21:18:12,976 - INFO - Epoch 243, Total: 0.000525, MSE: 0.000525, Orth: 0.000006
+2026-04-17 21:18:24,671 - INFO - Epoch 244, Total: 0.000532, MSE: 0.000532, Orth: 0.000006
+2026-04-17 21:18:36,582 - INFO - Epoch 245, Total: 0.000530, MSE: 0.000530, Orth: 0.000006
+2026-04-17 21:18:48,321 - INFO - Epoch 246, Total: 0.000518, MSE: 0.000518, Orth: 0.000006
+2026-04-17 21:18:48,323 - INFO - Best model saved.
+2026-04-17 21:19:00,919 - INFO - Epoch 247, Total: 0.000531, MSE: 0.000531, Orth: 0.000006
+2026-04-17 21:19:12,941 - INFO - Epoch 248, Total: 0.000525, MSE: 0.000525, Orth: 0.000006
+2026-04-17 21:19:25,043 - INFO - Epoch 249, Total: 0.000525, MSE: 0.000525, Orth: 0.000005
+2026-04-17 21:19:36,692 - INFO - Epoch 250, Total: 0.000525, MSE: 0.000525, Orth: 0.000005
+2026-04-17 21:19:48,263 - INFO - Epoch 251, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:19:59,954 - INFO - Epoch 252, Total: 0.000527, MSE: 0.000526, Orth: 0.000005
+2026-04-17 21:20:12,578 - INFO - Epoch 253, Total: 0.000529, MSE: 0.000529, Orth: 0.000005
+2026-04-17 21:20:24,619 - INFO - Epoch 254, Total: 0.000531, MSE: 0.000531, Orth: 0.000005
+2026-04-17 21:20:36,174 - INFO - Epoch 255, Total: 0.000524, MSE: 0.000524, Orth: 0.000005
+2026-04-17 21:20:47,737 - INFO - Epoch 256, Total: 0.000523, MSE: 0.000523, Orth: 0.000005
+2026-04-17 21:20:59,471 - INFO - Epoch 257, Total: 0.000530, MSE: 0.000530, Orth: 0.000005
+2026-04-17 21:21:11,512 - INFO - Epoch 258, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:21:24,251 - INFO - Epoch 259, Total: 0.000525, MSE: 0.000525, Orth: 0.000005
+2026-04-17 21:21:36,226 - INFO - Epoch 260, Total: 0.000523, MSE: 0.000523, Orth: 0.000005
+2026-04-17 21:21:48,119 - INFO - Epoch 261, Total: 0.000525, MSE: 0.000525, Orth: 0.000005
+2026-04-17 21:21:59,777 - INFO - Epoch 262, Total: 0.000520, MSE: 0.000520, Orth: 0.000005
+2026-04-17 21:22:11,371 - INFO - Epoch 263, Total: 0.000524, MSE: 0.000524, Orth: 0.000005
+2026-04-17 21:22:23,750 - INFO - Epoch 264, Total: 0.000531, MSE: 0.000531, Orth: 0.000005
+2026-04-17 21:22:35,879 - INFO - Epoch 265, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:22:47,451 - INFO - Epoch 266, Total: 0.000530, MSE: 0.000530, Orth: 0.000005
+2026-04-17 21:22:59,024 - INFO - Epoch 267, Total: 0.000520, MSE: 0.000520, Orth: 0.000004
+2026-04-17 21:23:10,766 - INFO - Epoch 268, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:23:22,604 - INFO - Epoch 269, Total: 0.000516, MSE: 0.000516, Orth: 0.000004
+2026-04-17 21:23:22,607 - INFO - Best model saved.
+2026-04-17 21:23:36,036 - INFO - Epoch 270, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:23:47,748 - INFO - Epoch 271, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:23:47,751 - INFO - Best model saved.
+2026-04-17 21:23:59,451 - INFO - Epoch 272, Total: 0.000520, MSE: 0.000520, Orth: 0.000005
+2026-04-17 21:24:10,986 - INFO - Epoch 273, Total: 0.000522, MSE: 0.000522, Orth: 0.000005
+2026-04-17 21:24:22,503 - INFO - Epoch 274, Total: 0.000514, MSE: 0.000514, Orth: 0.000005
+2026-04-17 21:24:34,822 - INFO - Epoch 275, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:24:47,089 - INFO - Epoch 276, Total: 0.000523, MSE: 0.000523, Orth: 0.000005
+2026-04-17 21:24:58,874 - INFO - Epoch 277, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:25:10,881 - INFO - Epoch 278, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:25:22,547 - INFO - Epoch 279, Total: 0.000522, MSE: 0.000522, Orth: 0.000005
+2026-04-17 21:25:34,215 - INFO - Epoch 280, Total: 0.000520, MSE: 0.000520, Orth: 0.000005
+2026-04-17 21:25:47,289 - INFO - Epoch 281, Total: 0.000513, MSE: 0.000512, Orth: 0.000005
+2026-04-17 21:25:47,292 - INFO - Best model saved.
+2026-04-17 21:25:59,479 - INFO - Epoch 282, Total: 0.000516, MSE: 0.000516, Orth: 0.000005
+2026-04-17 21:26:11,414 - INFO - Epoch 283, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:26:23,137 - INFO - Epoch 284, Total: 0.000520, MSE: 0.000519, Orth: 0.000005
+2026-04-17 21:26:34,828 - INFO - Epoch 285, Total: 0.000524, MSE: 0.000524, Orth: 0.000005
+2026-04-17 21:26:47,514 - INFO - Epoch 286, Total: 0.000519, MSE: 0.000519, Orth: 0.000005
+2026-04-17 21:26:59,708 - INFO - Epoch 287, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:27:11,386 - INFO - Epoch 288, Total: 0.000516, MSE: 0.000516, Orth: 0.000005
+2026-04-17 21:27:23,016 - INFO - Epoch 289, Total: 0.000523, MSE: 0.000523, Orth: 0.000005
+2026-04-17 21:27:34,559 - INFO - Epoch 290, Total: 0.000513, MSE: 0.000513, Orth: 0.000005
+2026-04-17 21:27:46,201 - INFO - Epoch 291, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:27:58,314 - INFO - Epoch 292, Total: 0.000517, MSE: 0.000517, Orth: 0.000005
+2026-04-17 21:28:09,915 - INFO - Epoch 293, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:28:21,615 - INFO - Epoch 294, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:28:33,358 - INFO - Epoch 295, Total: 0.000520, MSE: 0.000520, Orth: 0.000005
+2026-04-17 21:28:45,216 - INFO - Epoch 296, Total: 0.000513, MSE: 0.000513, Orth: 0.000005
+2026-04-17 21:28:57,164 - INFO - Epoch 297, Total: 0.000514, MSE: 0.000514, Orth: 0.000005
+2026-04-17 21:29:09,948 - INFO - Epoch 298, Total: 0.000514, MSE: 0.000514, Orth: 0.000005
+2026-04-17 21:29:21,913 - INFO - Epoch 299, Total: 0.000517, MSE: 0.000517, Orth: 0.000005
+2026-04-17 21:29:33,602 - INFO - Epoch 300, Total: 0.000523, MSE: 0.000523, Orth: 0.000005
+2026-04-17 21:29:45,287 - INFO - Epoch 301, Total: 0.000517, MSE: 0.000517, Orth: 0.000005
+2026-04-17 21:29:56,998 - INFO - Epoch 302, Total: 0.000513, MSE: 0.000513, Orth: 0.000005
+2026-04-17 21:30:09,545 - INFO - Epoch 303, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:30:21,909 - INFO - Epoch 304, Total: 0.000517, MSE: 0.000517, Orth: 0.000005
+2026-04-17 21:30:33,451 - INFO - Epoch 305, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:30:45,229 - INFO - Epoch 306, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:30:56,934 - INFO - Epoch 307, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:31:09,050 - INFO - Epoch 308, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:31:21,710 - INFO - Epoch 309, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:31:33,355 - INFO - Epoch 310, Total: 0.000520, MSE: 0.000520, Orth: 0.000005
+2026-04-17 21:31:45,004 - INFO - Epoch 311, Total: 0.000515, MSE: 0.000515, Orth: 0.000005
+2026-04-17 21:31:56,638 - INFO - Epoch 312, Total: 0.000514, MSE: 0.000514, Orth: 0.000005
+2026-04-17 21:32:08,266 - INFO - Epoch 313, Total: 0.000514, MSE: 0.000514, Orth: 0.000005
+2026-04-17 21:32:20,390 - INFO - Epoch 314, Total: 0.000519, MSE: 0.000519, Orth: 0.000005
+2026-04-17 21:32:32,217 - INFO - Epoch 315, Total: 0.000514, MSE: 0.000514, Orth: 0.000005
+2026-04-17 21:32:44,086 - INFO - Epoch 316, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:32:56,053 - INFO - Epoch 317, Total: 0.000520, MSE: 0.000520, Orth: 0.000005
+2026-04-17 21:33:08,457 - INFO - Epoch 318, Total: 0.000512, MSE: 0.000512, Orth: 0.000005
+2026-04-17 21:33:20,101 - INFO - Epoch 319, Total: 0.000519, MSE: 0.000519, Orth: 0.000005
+2026-04-17 21:33:33,524 - INFO - Epoch 320, Total: 0.000516, MSE: 0.000516, Orth: 0.000005
+2026-04-17 21:33:45,648 - INFO - Epoch 321, Total: 0.000517, MSE: 0.000517, Orth: 0.000005
+2026-04-17 21:33:57,235 - INFO - Epoch 322, Total: 0.000516, MSE: 0.000516, Orth: 0.000005
+2026-04-17 21:34:08,793 - INFO - Epoch 323, Total: 0.000518, MSE: 0.000518, Orth: 0.000005
+2026-04-17 21:34:20,349 - INFO - Epoch 324, Total: 0.000521, MSE: 0.000521, Orth: 0.000005
+2026-04-17 21:34:32,420 - INFO - Epoch 325, Total: 0.000516, MSE: 0.000516, Orth: 0.000005
+2026-04-17 21:34:44,606 - INFO - Epoch 326, Total: 0.000523, MSE: 0.000523, Orth: 0.000005
+2026-04-17 21:34:56,334 - INFO - Epoch 327, Total: 0.000517, MSE: 0.000517, Orth: 0.000005
+2026-04-17 21:35:07,985 - INFO - Epoch 328, Total: 0.000516, MSE: 0.000516, Orth: 0.000005
+2026-04-17 21:35:19,530 - INFO - Epoch 329, Total: 0.000525, MSE: 0.000525, Orth: 0.000005
+2026-04-17 21:35:31,180 - INFO - Epoch 330, Total: 0.000513, MSE: 0.000513, Orth: 0.000005
+2026-04-17 21:35:43,831 - INFO - Epoch 331, Total: 0.000513, MSE: 0.000513, Orth: 0.000005
+2026-04-17 21:35:43,831 - INFO - Early stopping.
+2026-04-17 21:35:43,831 - INFO - Training completed.
+Dataset Distribution (Cycles): Counter({'LFP': 209608, 'NMC': 173131, 'NCA': 18331, 'NMC+NCA': 7504})
+Testing:   0%|          | 0/7 [00:00<?, ?it/s]Testing:  14%|█▍        | 1/7 [00:01<00:06,  1.09s/it]Testing:  29%|██▊       | 2/7 [00:02<00:05,  1.14s/it]Testing:  43%|████▎     | 3/7 [00:06<00:11,  2.76s/it]Testing:  57%|█████▋    | 4/7 [00:13<00:12,  4.27s/it]Testing:  71%|███████▏  | 5/7 [00:15<00:06,  3.41s/it]Testing:  86%|████████▌ | 6/7 [00:21<00:04,  4.17s/it]Testing: 100%|██████████| 7/7 [00:21<00:00,  3.01s/it]

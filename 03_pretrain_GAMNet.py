@@ -159,7 +159,7 @@ def read_dataset(train_dir):
 #     logging.info(f'Training completed. Model weights saved to {model_path}.')
 
 
-def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5, lambda_orth_p1=0.01):
+def train(X, y, samples_weights, model_path, abs_path, l2_weight_decay=1e-5, lambda_orth_p1=0.01):
     """
     Args:
         lambda_orth_p1: 正交化损失的系数，建议 0.01 ~ 0.1
@@ -185,7 +185,7 @@ def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5, lambda_orth_p
     model = GMANetPreTrain().to(device)
     
     # --- 建议：手动进行正交初始化，给模型一个好的起点 ---
-    nn.init.orthogonal_(model.temp_connector.weight)
+    model.temp_connector.reset_parameters()
     
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(
@@ -224,16 +224,14 @@ def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5, lambda_orth_p
             pred = model(xb)
             mse_loss = criterion(pred, yb)
             
-            # 2. --- 新增：正交约束逻辑 ---
-            # 获取权重 [32, 64]
-            W = model.temp_connector.weight 
-            # 计算 W * W.T (得到 32x32 矩阵)
-            WWt = torch.mm(W, W.t())
-            # 目标是单位阵 I
-            I = torch.eye(32, device=device)
-            # 计算 MSE 距离
-            orth_loss = torch.mean((WWt - I)**2)
-            
+            # 2. LoRA 正交约束
+            param_A = model.temp_connector.param_A.unsqueeze(0)
+            param_B = model.temp_connector.param_B.unsqueeze(0)
+            rank = param_A.size(-1)
+            I = torch.eye(rank, device=device).unsqueeze(0)
+            l_orth_A = torch.mean((torch.bmm(param_A.transpose(1, 2), param_A) - I)**2)
+            l_orth_B = torch.mean((torch.bmm(param_B, param_B.transpose(1, 2)) - I)**2)
+            orth_loss = l_orth_A + l_orth_B
             # 3. 组合总损失
             total_loss = mse_loss + lambda_orth_p1 * orth_loss
             
@@ -255,6 +253,7 @@ def train(X, y, samples_weights, model_path, l2_weight_decay=1e-5, lambda_orth_p
             best_loss = epoch_total
             no_improve = 0
             torch.save(model.state_dict(), model_path) # 及时保存最优
+            torch.save(model.temp_connector.export_abs(), abs_path)
             logging.info('Best model saved.')
         else:
             no_improve += 1
@@ -337,8 +336,9 @@ if __name__ == "__main__":
     result_dir = config.path.results_dir
     model_path = os.path.join(result_dir, 'GMA-NET.pkl')
     test_result_path = os.path.join(result_dir, 'pretrain', 'GMANetPreTrain_test.csv')
+    abs_path = os.path.join(result_dir, 'GMA_pretrained_abs.pth')
     os.makedirs(result_dir, exist_ok=True)
 
     X, y, samples_weights = read_dataset(Path(train_dir))
-    train(X, y, samples_weights, Path(model_path))
+    train(X, y, samples_weights, Path(model_path), Path(abs_path))
     test(Path(model_path), Path(labeled_dir), Path(test_result_path))

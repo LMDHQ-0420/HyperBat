@@ -8,25 +8,110 @@ import numpy as np
 import pandas as pd
 import torch
 import argparse
+import torch.nn.functional as F
 
 from battery_data import BatteryData
-from model import GMANet, HyperLoRAGenerator
+from model import GMANet, WeightDenoiser  # 确保导入扩散模型类
+
+
+def load_pretrained_abs_init(init_abs_path, device):
+    """加载 GMA 预训练导出的 A/B/S 原型并转换为 385 维初始化向量。"""
+    if not init_abs_path.exists():
+        logging.warning(f'ABS init file not found: {init_abs_path}. Fallback to random noise.')
+        return None
+
+    data = torch.load(init_abs_path, map_location=device)
+    if 'init_vec' in data:
+        init_vec = data['init_vec'].float().view(-1)
+    elif 'param_A' in data and 'param_B' in data and 'param_log_s' in data:
+        init_vec = torch.cat([
+            data['param_A'].float().view(-1),
+            data['param_B'].float().view(-1),
+            data['param_log_s'].float().view(-1),
+        ])
+    else:
+        logging.warning(f'Invalid ABS init format: {init_abs_path}. Fallback to random noise.')
+        return None
+
+    if init_vec.numel() != 385:
+        logging.warning(f'ABS init size mismatch ({init_vec.numel()}). Expected 385. Fallback to random noise.')
+        return None
+
+    return init_vec.to(device)
 
 # ==========================================
-# 1. 核心推理逻辑
+# 1. 扩散采样器 (用于测试时的 Reverse Process)
 # ==========================================
 
-def run_detailed_evaluation(base_model, hyper_gen, weights_dir, labeled_dir, device, args, result_path):
+class DiffusionSampler:
+    def __init__(self, T=20, device='cuda'):
+        self.T = T
+        self.device = device
+        # 需与训练时的调度完全一致
+        self.betas = torch.linspace(1e-4, 0.02, T).to(device)
+        self.alphas = 1.0 - self.betas
+        self.alphas_cumprod = torch.cumprod(self.alphas, axis=0)
+        
+    @torch.no_grad()
+    def sample(self, model, feat_g, feat_l, init_vec=None):
+        """
+        输入: 
+            model: 训练好的 WeightDenoiser
+            feat_g, feat_l: 提取好的全局和局部特征 [1, Seq, 64]
+        返回: 
+            归一化空间的展平权重向量 [1, 385]
+        """
+        model.eval()
+        # 逆扩散起点：优先使用预训练 GMA 的 A/B/S 原型向量，否则回退随机噪声
+        if init_vec is not None:
+            cur_x = init_vec.to(self.device).view(1, -1)
+        else:
+            cur_x = torch.randn((1, 385), device=self.device)
+        
+        for i in reversed(range(self.T)):
+            t = torch.full((1,), i, device=self.device, dtype=torch.long)
+            # 预测噪声
+            predicted_noise = model(cur_x, t, feat_g, feat_l)
+            
+            alpha_t = self.alphas[i]
+            alpha_cumprod_t = self.alphas_cumprod[i]
+            beta_t = self.betas[i]
+            
+            noise = torch.randn_like(cur_x) if i > 0 else 0
+            
+            # DDPM 迭代公式
+            cur_x = (1 / torch.sqrt(alpha_t)) * (
+                cur_x - ((1 - alpha_t) / torch.sqrt(1 - alpha_cumprod_t)) * predicted_noise
+            ) + torch.sqrt(beta_t) * noise
+
+            # 与训练采样保持一致：防止离群值在反归一化后放大
+            cur_x = torch.clamp(cur_x, -5.0, 5.0)
+
+        return cur_x
+
+# ==========================================
+# 2. 核心端到端推理逻辑
+# ==========================================
+
+def run_diffusion_end2end_evaluation(base_model, denoiser, sampler, stats, weights_dir, labeled_dir, device, args, result_path, init_vec=None):
     """
-    端到端评估：记录每一个电池每一个窗口的 MSE, MAE, RMSE
+    针对扩散模型优化的端到端评估
     """
     detailed_results = []
     
-    # 获取测试子目录 (test_CALCE, test_HNEI, etc.)
+    # 提取 Z-Score 统计量
+    t_mean = stats['mean'].to(device)
+    t_std = stats['std'].to(device)
+
+    # 扩散模型在标准化空间训练，初始化向量需先标准化
+    init_vec_norm = None
+    if init_vec is not None:
+        init_vec_norm = ((init_vec.to(device).view(-1) - t_mean) / (t_std + 1e-8)).view(1, -1)
+
     test_subdirs = sorted([d for d in weights_dir.iterdir() if d.is_dir() and d.name.startswith('test_')])
     
     if not test_subdirs:
-        logging.error(f"在路径 {weights_dir} 下未找到测试文件夹。")
+        logging.error("未找到测试子目录。")
         return
 
     for subdir in test_subdirs:
@@ -34,52 +119,49 @@ def run_detailed_evaluation(base_model, hyper_gen, weights_dir, labeled_dir, dev
         raw_data_dir = labeled_dir / dataset_name
         weight_files = sorted(subdir.glob('*.pkl'))
         
-        if not weight_files:
-            continue
-        
-        logging.info(f"正在深度评估数据集: {dataset_name}")
+        logging.info(f"正在深度评估扩散模型: {dataset_name}")
         
         for f in tqdm(weight_files, desc=f"Eval {dataset_name}"):
-            # --- 1. 解析文件名获取元数据 ---
-            # 假设文件名格式为: BatteryName_StartIdx.pkl
+            # --- 1. 元数据解析 ---
             parts = f.stem.split("_")
             start_idx = int(parts[-1])
             battery_name = "_".join(parts[:-1])
             battery_path = raw_data_dir / f"{battery_name}.pkl"
             
-            if not battery_path.exists():
-                continue
-                
+            if not battery_path.exists(): continue
             battery = BatteryData.load(str(battery_path))
             
-            # --- 2. 准备信号数据 ---
-            # Global 特征信号
+            # --- 2. 准备信号 ---
             g_data = battery.cycle_data[0 : args.global_num_cycles]
             g_cyc = torch.tensor(np.stack([np.asarray(c.labeled_Qc, dtype=np.float32) for c in g_data])).to(device)
             
-            # Local 特征信号
             l_data = battery.cycle_data[start_idx : start_idx + args.local_num_cycles]
             l_cyc = torch.tensor(np.stack([np.asarray(c.labeled_Qc, dtype=np.float32) for c in l_data])).to(device)
             
-            # 待预测窗口信号
             w_data = battery.cycle_data[start_idx : start_idx + args.window_size]
             w_cyc = torch.tensor(np.stack([np.asarray(c.labeled_Qc, dtype=np.float32) for c in w_data])).to(device)
             true_soh = np.array([c.labeled_soh for c in w_data])
 
-            # --- 3. 端到端预测 ---
+            # --- 3. 扩散采样推理 ---
             with torch.no_grad():
                 # A. 提取指纹特征
-                feat_g = base_model.encoder(g_cyc).unsqueeze(0) # [1, G, 64]
-                feat_l = base_model.encoder(l_cyc).unsqueeze(0) # [1, L, 64]
+                feat_g = base_model.encoder(g_cyc).unsqueeze(0)
+                feat_l = base_model.encoder(l_cyc).unsqueeze(0)
                 
-                # B. 生成 HyperLoRA 权重
-                p_A, p_B, p_log_s = hyper_gen(feat_g, feat_l)
+                # B. 采样生成标准化向量 (1, 385)
+                gen_vec_norm = sampler.sample(denoiser, feat_g, feat_l, init_vec=init_vec_norm)
                 
-                # C. 提取窗口特征
-                feat_w = base_model.encoder(w_cyc) # [Window, 64]
+                # C. 反标准化 (回到真实物理量级)
+                gen_vec = gen_vec_norm * t_std + t_mean
                 
-                # D. 注入权重并计算 SOH
-                # 将生成的单组权重扩展到整个 Batch (Window Size)
+                # D. 拆解参数: A(4*64=256), B(4*32=128), log_s(1)
+                # A: 64*4 = 256, B: 4*32 = 128
+                p_A = gen_vec[:, 0:256].view(1, 64, 4)  # 对应 apply_lora 里的形状
+                p_B = gen_vec[:, 256:384].view(1, 4, 32)
+                p_log_s = torch.clamp(gen_vec[:, 384:385], min=-args.log_s_clip, max=args.log_s_clip)
+                
+                # E. 注入 LoRA 权重预测 SOH
+                feat_w = base_model.encoder(w_cyc)
                 p_A_batch = p_A.repeat(feat_w.size(0), 1, 1)
                 p_B_batch = p_B.repeat(feat_w.size(0), 1, 1)
                 p_log_s_batch = p_log_s.repeat(feat_w.size(0), 1)
@@ -87,33 +169,45 @@ def run_detailed_evaluation(base_model, hyper_gen, weights_dir, labeled_dir, dev
                 pred_soh = base_model.apply_lora(feat_w, p_A_batch, p_B_batch, p_log_s_batch)
                 pred_soh = pred_soh.cpu().numpy().flatten()
 
-            # --- 4. 计算多维误差指标 ---
-            mse = np.mean((pred_soh - true_soh) ** 2)
-            mae = np.mean(np.abs(pred_soh - true_soh))
+            # --- 4. 误差计算 ---
+            pred_soh_raw = pred_soh
+            pred_soh_clip = np.clip(pred_soh_raw, 0.0, 1.0)
+
+            mse_raw = np.mean((pred_soh_raw - true_soh) ** 2)
+            mae_raw = np.mean(np.abs(pred_soh_raw - true_soh))
+            rmse_raw = np.sqrt(mse_raw)
+
+            mse = np.mean((pred_soh_clip - true_soh) ** 2)
+            mae = np.mean(np.abs(pred_soh_clip - true_soh))
             rmse = np.sqrt(mse)
 
-            # --- 5. 保存详细数据 ---
             detailed_results.append({
                 'dataset': dataset_name,
                 'battery_name': battery_name,
                 'window_start': start_idx,
                 'mse': mse,
                 'mae': mae,
-                'rmse': rmse
+                'rmse': rmse,
+                'mse_raw': mse_raw,
+                'mae_raw': mae_raw,
+                'rmse_raw': rmse_raw
             })
 
-    # --- 6. 导出数据 ---
     df = pd.DataFrame(detailed_results)
     df.to_csv(result_path, index=False)
     
-    # 打印简要总结
-    summary = df.groupby('dataset')[['mae', 'rmse']].mean()
-    logging.info("\n=== 评估结果摘要 ===")
-    logging.info(f"\n{summary}")
-    logging.info(f"详细评估报告已保存至: {result_path}")
+    if df.empty:
+        logging.warning('No evaluation records were generated.')
+        return
+
+    summary_clip = df.groupby('dataset')[['mae', 'rmse']].mean()
+    summary_raw = df.groupby('dataset')[['mae_raw', 'rmse_raw']].mean()
+    logging.info(f"\n=== 扩散模型评估摘要 (clipped [0,1]) ===\n{summary_clip}")
+    logging.info(f"\n=== 扩散模型评估摘要 (raw) ===\n{summary_raw}")
+    logging.info(f"报告已保存: {result_path}")
 
 # ==========================================
-# 2. Main 脚本入口
+# 3. Main
 # ==========================================
 
 if __name__ == "__main__":
@@ -121,61 +215,59 @@ if __name__ == "__main__":
         config = compose(config_name="main")
     config = OmegaConf.create(config)
 
-    parser = argparse.ArgumentParser(description="HyperBat End-to-End Detailed Evaluation")
-    parser.add_argument(
-        "--slide",
-        choices=['True', 'False'],
-        help="Whether to use sliding window training (string True/False)",
-        default='True'
-    )
-    parser.add_argument("--window_size", type=int, default=200)    
+    parser = argparse.ArgumentParser(description="Weight Diffusion End-to-End Evaluation")
+    parser.add_argument("--window_size", type=int, default=200)
     parser.add_argument("--stride", type=int, default=50)
     parser.add_argument("--local_num_cycles", type=int, default=5)
     parser.add_argument("--global_num_cycles", type=int, default=20)
+    parser.add_argument("--diffusion_steps", type=int, default=400)
+    parser.add_argument("--denoiser_hidden_dim", type=int, default=512)
+    parser.add_argument("--log_s_clip", type=float, default=5.0)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    result_dir = Path(config.path.results_dir) / f"end2end_results"
-    result_dir.mkdir(parents=True, exist_ok=True)
-    labeled_dir = Path(config.path.labeled_dir)
-    # 权重路径需与 Phase 2 的输出保持一致
-    weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
-
-    # 模型路径
-    model_path = Path(config.path.results_dir) / 'GMA-NET.pkl'
-
-    if not args.slide:
-        weights_dir = Path(config.path.weights_dir) / 'full'
-        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_full_global{args.global_num_cycles}_local{args.local_num_cycles}.pkl'
-        result_path = result_dir / f'End2End_full_global{args.global_num_cycles}_local{args.local_num_cycles}_test.csv'
-    else:
-        weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
-        hyper_model_path = Path(config.path.results_dir) / f'HyperLoRA_wsize{args.window_size}_stride_{args.stride}_global{args.global_num_cycles}_local{args.local_num_cycles}.pkl'
-        result_path = result_dir / f'End2End_wsize{args.window_size}_stride_{args.stride}_global{args.global_num_cycles}_local{args.local_num_cycles}.csv'
-
-    # --- 模型加载 ---
-    # 1. 加载 GMA-NET (Base)
-    base_model = GMANet(rank=4).to(device)
-    # 注意: GMA-NET.pkl 可能包含 temp_connector，我们设 strict=False 以兼容
-    base_model.load_state_dict(torch.load(model_path, map_location=device), strict=False)
     
-    # 2. 加载 HyperLoRA 生成器
-    hyper_gen = HyperLoRAGenerator(feature_dim=64, rank=4).to(device)
-    hyper_gen.load_state_dict(torch.load(hyper_model_path, map_location=device))
+    # 路径配置
+    res_dir = Path(config.path.results_dir)
+    e2e_dir = res_dir / "end2end_diffusion_results"
+    e2e_dir.mkdir(parents=True, exist_ok=True)
+    
+    labeled_dir = Path(config.path.labeled_dir)
+    weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
+    
+    # 模型与统计量路径
+    base_model_path = res_dir / 'GMA-NET.pkl'
+    diffusion_model_path = res_dir / 'WeightDiffusion_Denoiser.pkl'
+    stats_path = res_dir / 'diffusion_stats.pth'
+    init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
+    
+    result_path = e2e_dir / f'Diffusion_E2E_wsize{args.window_size}_stride{args.stride}.csv'
+
+    # --- 加载模型 ---
+    # 1. Base Model (GMANet)
+    base_model = GMANet(rank=4).to(device)
+    base_model.load_state_dict(torch.load(base_model_path, map_location=device), strict=False)
+    
+    # 2. Diffusion Denoiser
+    denoiser = WeightDenoiser(weight_dim=385, hidden_dim=args.denoiser_hidden_dim).to(device)
+    denoiser.load_state_dict(torch.load(diffusion_model_path, map_location=device))
+    
+    # 3. Z-Score Stats
+    if not stats_path.exists():
+        raise FileNotFoundError(f"未找到统计量文件 {stats_path}，请先运行训练脚本生成。")
+    stats = torch.load(stats_path, map_location=device)
+    init_vec = load_pretrained_abs_init(init_abs_path, device)
+
+    # 4. Sampler
+    sampler = DiffusionSampler(T=args.diffusion_steps, device=device)
 
     base_model.eval()
-    hyper_gen.eval()
+    denoiser.eval()
 
-    logging.info("--- 开始 HyperBat 端到端深度评估 (逐窗口记录) ---")
-    
-    run_detailed_evaluation(
-        base_model, 
-        hyper_gen, 
-        weights_dir, 
-        labeled_dir, 
-        device, 
-        args, 
-        result_path
+    logging.info("--- 开始扩散模型端到端评估 ---")
+    run_diffusion_end2end_evaluation(
+        base_model, denoiser, sampler, stats,
+        weights_dir, labeled_dir, device, args, result_path,
+        init_vec=init_vec
     )

@@ -154,6 +154,26 @@ def combined_loss(preds, targets, param_A, param_B,
 
     return total_loss
 
+
+def canonicalize_lora(param_A, param_B, eps=1e-8):
+    """
+    将 A/B 规范化并提取 log_s，减少尺度不确定性。
+    同时做简单符号对齐，降低等价分解带来的标签抖动。
+    """
+    norm_A = torch.norm(param_A, p="fro")
+    norm_B = torch.norm(param_B, p="fro")
+
+    A_norm = param_A / (norm_A + eps)
+    B_norm = param_B / (norm_B + eps)
+    log_s = torch.log(norm_A * norm_B + eps).view(1)
+
+    sign = torch.sign(A_norm.sum(dim=0))
+    sign[sign == 0] = 1.0
+    A_norm = A_norm * sign.view(1, -1)
+    B_norm = B_norm * sign.view(-1, 1)
+
+    return A_norm, B_norm, log_s
+
 def train(windows, model, device, sub_weights_dir, battery_id, num_restarts=300):
     """
     极致精度版：300次并行初始化选优
@@ -243,20 +263,18 @@ def train(windows, model, device, sub_weights_dir, battery_id, num_restarts=300)
         if counter >= patience:
             break
 
-    # 4. 保存每个窗口的结果 (修改版：直接保存 W)
+    # 4. 保存每个窗口的结果：仅保存 A/B/log_s
     for i in range(num_wins):
         start_idx = windows[i]['start_idx']
         save_path = sub_weights_dir / f'{battery_id}_{start_idx}.pkl'
-        
-        # 计算合成后的 W [64, 32]
-        W_final = torch.matmul(best_A[i], best_B[i]) 
-        
+
+        A_norm, B_norm, log_s = canonicalize_lora(best_A[i], best_B[i])
+
         torch.save({
-            'weight_W': W_final.cpu(),  # 直接存 W
             'start_idx': start_idx,
-            # 如果你想保留 A 和 B 备用也可以，但扩散模型主要读 weight_W
-            'param_A': best_A[i].cpu(), 
-            'param_B': best_B[i].cpu()
+            'param_A': A_norm.cpu(),
+            'param_B': B_norm.cpu(),
+            'param_log_s': log_s.cpu()
         }, save_path)
     
     return best_A, best_B
@@ -267,15 +285,18 @@ def train(windows, model, device, sub_weights_dir, battery_id, num_restarts=300)
 # -----------------------------------------------------------------------------
 def test(weight_path, model, device, battery, slide, start_idx, window_size, test_result_path):
     """
-    修改版：直接加载合成后的 weight_W 进行推理
+    推理时优先使用 A/B/log_s 还原权重，兼容历史 weight_W。
     """
     
     # 1. 加载合成后的权重 W [64, 32]
     # ---------------------------------------------------------
     weights = torch.load(weight_path, map_location=device)
     
-    # 兼容性处理：优先读取 weight_W，如果不存在则现场合成
-    W = weights['weight_W'].to(device)
+    p_A = weights['param_A'].to(device).float()
+    p_B = weights['param_B'].to(device).float()
+    p_log_s = weights.get('param_log_s', torch.zeros(1)).to(device).float().view(1)
+    scale = torch.exp(torch.clamp(p_log_s, min=-5.0, max=5.0)).view(1, 1)
+    W = scale * torch.matmul(p_A, p_B)
     
     # 2. 准备数据
     # ---------------------------------------------------------

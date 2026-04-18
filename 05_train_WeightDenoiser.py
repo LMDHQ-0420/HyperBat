@@ -23,7 +23,7 @@ from model import GMANetPreTrain, WeightDenoiser
 # ==============================================================================
 
 class DiffusionManager:
-    def __init__(self, T=1000, device='cuda'):
+    def __init__(self, T=400, device='cuda'):
         self.T = T  # 总扩散步数
         self.device = device
         
@@ -49,13 +49,16 @@ class DiffusionManager:
         return sqrt_alphas_cumprod_t * x_0 + sqrt_one_minus_alphas_cumprod_t * noise
 
     @torch.no_grad()
-    def p_sample_loop(self, model, global_feat, local_feat, shape):
+    def p_sample_loop(self, model, global_feat, local_feat, shape, init_vec=None):
         """ 
         逆向去噪过程（采样）：从纯高斯噪声开始，通过模型预测的噪声逐步还原出 x_0
         """
         model.eval()
-        # 从标准正态分布随机噪声开始 [Batch, 385]
-        cur_x = torch.randn(shape, device=self.device)
+        # 逆扩散起点：优先使用预训练 GMA 的 A/B/S 原型向量，否则回退随机噪声
+        if init_vec is not None:
+            cur_x = init_vec.to(self.device).view(1, -1).repeat(shape[0], 1)
+        else:
+            cur_x = torch.randn(shape, device=self.device)
         
         # 从 T-1 步倒数到 0 步进行迭代
         for i in reversed(range(self.T)):
@@ -100,7 +103,7 @@ def load_frozen_encoder(pretrained_path, device):
     """ 加载预训练的电池特征提取器（编码器），并冻结参数 """
     model = GMANetPreTrain().to(device)
     state_dict = torch.load(pretrained_path, map_location=device)
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict, strict=False)
     encoder = model.encoder
     encoder.eval()
     for p in encoder.parameters(): 
@@ -125,15 +128,14 @@ def load_data_flattened(weight_path, device, train_dir, local_num, global_num, e
     weights = torch.load(weight_path, map_location=device)
     p_A, p_B = weights["param_A"].to(device).float(), weights["param_B"].to(device).float()
 
-    # 计算 Frobenius 范数乘积，作为全局缩放因子
-    norm_val = torch.norm(p_A, p="fro") * torch.norm(p_B, p="fro")
-    
-    # 将 A 和 B 归一化（只保留方向信息），防止不同电池权重数值差异过大导致扩散难收敛
+    # 如果上游已显式保存 log_s，则优先使用该值；否则由 A/B 范数恢复
     A_norm = p_A / (torch.norm(p_A, p="fro") + eps)
     B_norm = p_B / (torch.norm(p_B, p="fro") + eps)
-    
-    # 缩放因子取对数，压缩数值空间，方便神经网络拟合
-    log_s = torch.log(norm_val + eps).view(1)
+    if "param_log_s" in weights:
+        log_s = weights["param_log_s"].to(device).float().view(1)
+    else:
+        norm_val = torch.norm(p_A, p="fro") * torch.norm(p_B, p="fro")
+        log_s = torch.log(norm_val + eps).view(1)
 
     # 目标向量组成：A(16x16=256) + B(16x8=128) + log_s(1) = 385 维
     target_vec = torch.cat([A_norm.flatten(), B_norm.flatten(), log_s])
@@ -151,17 +153,42 @@ def load_data_flattened(weight_path, device, train_dir, local_num, global_num, e
 
     return target_vec.cpu(), torch.tensor(l_cyc), torch.tensor(g_cyc)
 
+
+def load_pretrained_abs_init(init_abs_path, device):
+    """加载 GMA 预训练导出的 A/B/S 原型并转换为 385 维初始化向量。"""
+    if not init_abs_path.exists():
+        logging.warning(f'ABS init file not found: {init_abs_path}. Fallback to random noise.')
+        return None
+
+    data = torch.load(init_abs_path, map_location=device)
+    if 'init_vec' in data:
+        init_vec = data['init_vec'].float().view(-1)
+    elif 'param_A' in data and 'param_B' in data and 'param_log_s' in data:
+        init_vec = torch.cat([
+            data['param_A'].float().view(-1),
+            data['param_B'].float().view(-1),
+            data['param_log_s'].float().view(-1),
+        ])
+    else:
+        logging.warning(f'Invalid ABS init format: {init_abs_path}. Fallback to random noise.')
+        return None
+
+    if init_vec.numel() != 385:
+        logging.warning(f'ABS init size mismatch ({init_vec.numel()}). Expected 385. Fallback to random noise.')
+        return None
+
+    return init_vec.to(device)
+
 # ==============================================================================
 # 3. 核心训练逻辑
 # ==============================================================================
 
-def train_diffusion(train_loader, model_save_path, device, epochs=100000):
-    # 扩散步数设为 400（根据你的 385 维数据，太少加噪太快，太多学习太难）
-    T_steps = 400
-    diff_manager = DiffusionManager(T=T_steps, device=device)
-    
+def train_diffusion(train_loader, model_save_path, device, epochs=100000, diffusion_steps=400, denoiser_hidden_dim=512):
+    # 扩散步数与网络宽度需和评估保持一致
+    diff_manager = DiffusionManager(T=diffusion_steps, device=device)
+
     # 定义去噪网络：输入 (噪声向量, 时间步, 全局特征, 局部特征)
-    model = WeightDenoiser(weight_dim=385, hidden_dim=512).to(device)
+    model = WeightDenoiser(weight_dim=385, hidden_dim=denoiser_hidden_dim).to(device)
     
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-5)
     
@@ -196,13 +223,33 @@ def train_diffusion(train_loader, model_save_path, device, epochs=100000):
             # 模型预测噪声
             predicted_noise = model(z_t, t, feat_g, feat_l)
             
-            # 计算预测噪声与真实噪声的 MSE
-            base_loss = F.mse_loss(predicted_noise, noise, reduction='none')
-            
-            # 重点逻辑：给向量最后一位 (log_s) 增加 Loss 权重
-            # 因为 log_s 的微小误差在 exp 还原后会造成巨大的 SOH 预测偏差
-            base_loss[:, -1] *= 20.0  
-            loss = base_loss.mean()
+            # 1) 噪声预测损失（基础 DDPM 目标）
+            noise_loss_map = F.mse_loss(predicted_noise, noise, reduction='none')
+            noise_loss_map[:, -1] *= 20.0
+            noise_loss = noise_loss_map.mean()
+
+            # 2) 从 epsilon 反推 x0，增强与真实参数向量的一致性
+            sqrt_ab_t = torch.sqrt(diff_manager.alphas_cumprod[t]).view(-1, 1)
+            sqrt_one_minus_ab_t = torch.sqrt(1 - diff_manager.alphas_cumprod[t]).view(-1, 1)
+            pred_x0 = (z_t - sqrt_one_minus_ab_t * predicted_noise) / (sqrt_ab_t + 1e-8)
+
+            vec_loss = F.mse_loss(pred_x0[:, :384], target_vec[:, :384])
+            log_s_loss = F.smooth_l1_loss(pred_x0[:, 384], target_vec[:, 384], beta=0.1)
+
+            # 3) 在下游实际使用的 W 空间做一致性约束，减小“向量 MSE 好但 SOH 差”
+            p_A = pred_x0[:, 0:256].view(-1, 64, 4)
+            p_B = pred_x0[:, 256:384].view(-1, 4, 32)
+            p_log_s = torch.clamp(pred_x0[:, 384:385], min=-5.0, max=5.0)
+
+            t_A = target_vec[:, 0:256].view(-1, 64, 4)
+            t_B = target_vec[:, 256:384].view(-1, 4, 32)
+            t_log_s = torch.clamp(target_vec[:, 384:385], min=-5.0, max=5.0)
+
+            pred_W = torch.exp(p_log_s).view(-1, 1, 1) * torch.bmm(p_A, p_B)
+            target_W = torch.exp(t_log_s).view(-1, 1, 1) * torch.bmm(t_A, t_B)
+            w_loss = F.mse_loss(pred_W, target_W)
+
+            loss = noise_loss + 0.2 * vec_loss + 0.5 * log_s_loss + 0.2 * w_loss
             
             loss.backward()
             
@@ -234,14 +281,13 @@ def train_diffusion(train_loader, model_save_path, device, epochs=100000):
 # 4. 测试与推理逻辑 (反归一化还原)
 # ==============================================================================
 
-def test_diffusion(model_path, stats_path, encoder, weights_dir, labeled_dir, device, local_num, global_num, result_path):
+def test_diffusion(model_path, stats_path, encoder, weights_dir, labeled_dir, device, local_num, global_num, result_path, diffusion_steps=400, denoiser_hidden_dim=512, init_vec=None):
     # 加载训练阶段保存的均值和标准差，用于反归一化
     stats = torch.load(stats_path, map_location=device)
     t_mean, t_std = stats['mean'].to(device), stats['std'].to(device)
     
-    T_steps = 400
-    diff_manager = DiffusionManager(T=T_steps, device=device)
-    model = WeightDenoiser(weight_dim=385, hidden_dim=512).to(device)
+    diff_manager = DiffusionManager(T=diffusion_steps, device=device)
+    model = WeightDenoiser(weight_dim=385, hidden_dim=denoiser_hidden_dim).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
 
@@ -260,7 +306,7 @@ def test_diffusion(model_path, stats_path, encoder, weights_dir, labeled_dir, de
             feat_g = build_X_from_cycles(g_cyc, encoder, device).unsqueeze(0).to(device)
             
             # 进行逆向去噪采样（推理生成的也是标准归一化空间的向量）
-            gen_vec_norm = diff_manager.p_sample_loop(model, feat_g, feat_l, (1, 385))
+            gen_vec_norm = diff_manager.p_sample_loop(model, feat_g, feat_l, (1, 385), init_vec=init_vec)
             
             # 关键：反归一化还原回物理量级空间
             gen_vec = gen_vec_norm * t_std + t_mean 
@@ -291,6 +337,8 @@ if __name__ == "__main__":
     parser.add_argument("--stride", type=int, default=50)
     parser.add_argument("--local_num_cycles", type=int, default=5)
     parser.add_argument("--global_num_cycles", type=int, default=20)
+    parser.add_argument("--diffusion_steps", type=int, default=400)
+    parser.add_argument("--denoiser_hidden_dim", type=int, default=512)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -302,9 +350,11 @@ if __name__ == "__main__":
     res_dir = Path(config.path.results_dir)
     model_save_path = res_dir / 'WeightDiffusion_Denoiser.pkl'
     stats_path = res_dir / 'diffusion_stats.pth'
+    init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
     
     # 预加载特征提取器
     encoder = load_frozen_encoder(res_dir / 'GMA-NET.pkl', device)
+    init_vec = load_pretrained_abs_init(init_abs_path, device)
 
     # 第一阶段：训练数据预处理与 Z-Score 统计计算
     train_files = sorted((weights_dir / 'train').glob('*.pkl'))
@@ -330,9 +380,27 @@ if __name__ == "__main__":
 
     # 第二阶段：执行扩散模型去噪网络训练
     logging.info("--- 开始训练阶段 ---")
-    train_diffusion(train_loader, model_save_path, device)
+    train_diffusion(
+        train_loader,
+        model_save_path,
+        device,
+        diffusion_steps=args.diffusion_steps,
+        denoiser_hidden_dim=args.denoiser_hidden_dim
+    )
 
     # 第三阶段：推理生成并评估效果
     logging.info("--- 开始测试评估阶段 ---")
-    test_diffusion(model_save_path, stats_path, encoder, weights_dir, labeled_dir, device, 
-                   args.local_num_cycles, args.global_num_cycles, res_dir/'diffusion_test_results.csv')
+    test_diffusion(
+        model_save_path,
+        stats_path,
+        encoder,
+        weights_dir,
+        labeled_dir,
+        device,
+        args.local_num_cycles,
+        args.global_num_cycles,
+        res_dir / 'diffusion_test_results.csv',
+        diffusion_steps=args.diffusion_steps,
+        denoiser_hidden_dim=args.denoiser_hidden_dim,
+        init_vec=init_vec
+    )
