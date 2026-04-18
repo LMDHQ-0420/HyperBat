@@ -183,7 +183,7 @@ def load_pretrained_abs_init(init_abs_path, device):
 # 3. 核心训练逻辑
 # ==============================================================================
 
-def train_diffusion(train_loader, model_save_path, device, epochs=100000, diffusion_steps=400, denoiser_hidden_dim=512):
+def train_diffusion(train_loader, model_save_path, device, diffusion_steps, denoiser_hidden_dim, epochs=100000):
     # 扩散步数与网络宽度需和评估保持一致
     diff_manager = DiffusionManager(T=diffusion_steps, device=device)
 
@@ -234,20 +234,7 @@ def train_diffusion(train_loader, model_save_path, device, epochs=100000, diffus
             pred_x0 = (z_t - sqrt_one_minus_ab_t * predicted_noise) / (sqrt_ab_t + 1e-8)
 
             vec_loss = F.mse_loss(pred_x0[:, :384], target_vec[:, :384])
-            
-            # 2.5) log_s 损失 + 正则化
-            pred_log_s = pred_x0[:, 384:385]
-            target_log_s = target_vec[:, 384:385]
-            log_s_fit_loss = F.smooth_l1_loss(pred_log_s, target_log_s, beta=0.1)
-            
-            if use_log_s_reg:
-                # 正则化：让 log_s 接近训练分布的均值（防止过度放大）
-                log_s_mean = target_log_s.mean().detach()
-                log_s_std = target_log_s.std().detach() + 1e-8
-                log_s_reg_loss = torch.mean(((pred_log_s - log_s_mean) / log_s_std) ** 2)
-                log_s_loss = log_s_fit_loss + 0.5 * log_s_reg_loss
-            else:
-                log_s_loss = log_s_fit_loss
+            log_s_loss = F.smooth_l1_loss(pred_x0[:, 384], target_vec[:, 384], beta=0.1)
 
             # 3) 在下游实际使用的 W 空间做一致性约束，减小“向量 MSE 好但 SOH 差”
             p_A = pred_x0[:, 0:256].view(-1, 64, 4)
@@ -262,17 +249,7 @@ def train_diffusion(train_loader, model_save_path, device, epochs=100000, diffus
             target_W = torch.exp(t_log_s).view(-1, 1, 1) * torch.bmm(t_A, t_B)
             w_loss = F.mse_loss(pred_W, target_W)
 
-            # 动态权重退火
-            if use_dynamic_weights:
-                progress = min(epoch / epochs, 1.0)
-                noise_w = 1.0 * (1 - 0.3 * progress)
-                vec_w = 0.2 * (1 + 1.0 * progress)
-                log_s_w = 0.5 * (1 + 0.5 * progress)
-                w_w = 0.2 * (1 + 1.5 * progress)
-            else:
-                noise_w, vec_w, log_s_w, w_w = 1.0, 0.2, 0.5, 0.2
-            
-            loss = noise_w * noise_loss + vec_w * vec_loss + log_s_w * log_s_loss + w_w * w_loss
+            loss = noise_loss + 0.2 * vec_loss + 0.5 * log_s_loss + 0.2 * w_loss
             
             loss.backward()
             
@@ -304,7 +281,7 @@ def train_diffusion(train_loader, model_save_path, device, epochs=100000, diffus
 # 4. 测试与推理逻辑 (反归一化还原)
 # ==============================================================================
 
-def test_diffusion(model_path, stats_path, encoder, weights_dir, labeled_dir, device, local_num, global_num, result_path, diffusion_steps=400, denoiser_hidden_dim=512, init_vec=None):
+def test_diffusion(model_path, stats_path, encoder, weights_dir, labeled_dir, device, local_num, global_num, result_path, diffusion_steps, denoiser_hidden_dim, init_vec=None):
     # 加载训练阶段保存的均值和标准差，用于反归一化
     stats = torch.load(stats_path, map_location=device)
     t_mean, t_std = stats['mean'].to(device), stats['std'].to(device)
@@ -362,8 +339,6 @@ if __name__ == "__main__":
     parser.add_argument("--global_num_cycles", type=int, default=20)
     parser.add_argument("--diffusion_steps", type=int, default=400)
     parser.add_argument("--denoiser_hidden_dim", type=int, default=512)
-    parser.add_argument("--use_log_s_reg", type=bool, default=True, help="Enable log_s regularization")
-    parser.add_argument("--use_dynamic_weights", type=bool, default=True, help="Enable dynamic weight annealing")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -373,9 +348,12 @@ if __name__ == "__main__":
     labeled_dir = Path(config.path.labeled_dir)
     weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
     res_dir = Path(config.path.results_dir)
-    model_save_path = res_dir / 'WeightDiffusion_Denoiser.pkl'
+    csv_dir = res_dir / "diffusion_results"
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    model_save_path = res_dir / f'WeightDiffusion_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
     stats_path = res_dir / 'diffusion_stats.pth'
     init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
+    csv_path = csv_dir / f'test_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.csv'
     
     # 预加载特征提取器
     encoder = load_frozen_encoder(res_dir / 'GMA-NET.pkl', device)
@@ -424,7 +402,7 @@ if __name__ == "__main__":
         device,
         args.local_num_cycles,
         args.global_num_cycles,
-        res_dir / 'diffusion_test_results.csv',
+        csv_path,
         diffusion_steps=args.diffusion_steps,
         denoiser_hidden_dim=args.denoiser_hidden_dim,
         init_vec=init_vec
