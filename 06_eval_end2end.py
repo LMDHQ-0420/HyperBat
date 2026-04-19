@@ -176,10 +176,14 @@ def run_diffusion_end2end_evaluation(base_model, denoiser, sampler, stats, weigh
             mse_raw = np.mean((pred_soh_raw - true_soh) ** 2)
             mae_raw = np.mean(np.abs(pred_soh_raw - true_soh))
             rmse_raw = np.sqrt(mse_raw)
+            # MAPE: 避免除以0，仅在 true_soh > 0 时计算
+            mask = true_soh > 0
+            mape_raw = np.mean(np.abs((true_soh[mask] - pred_soh_raw[mask]) / true_soh[mask])) if np.any(mask) else 0.0
 
             mse = np.mean((pred_soh_clip - true_soh) ** 2)
             mae = np.mean(np.abs(pred_soh_clip - true_soh))
             rmse = np.sqrt(mse)
+            mape = np.mean(np.abs((true_soh[mask] - pred_soh_clip[mask]) / true_soh[mask])) if np.any(mask) else 0.0
 
             detailed_results.append({
                 'dataset': dataset_name,
@@ -188,9 +192,11 @@ def run_diffusion_end2end_evaluation(base_model, denoiser, sampler, stats, weigh
                 'mse': mse,
                 'mae': mae,
                 'rmse': rmse,
+                'mape': mape,
                 'mse_raw': mse_raw,
                 'mae_raw': mae_raw,
-                'rmse_raw': rmse_raw
+                'rmse_raw': rmse_raw,
+                'mape_raw': mape_raw
             })
 
     df = pd.DataFrame(detailed_results)
@@ -200,8 +206,8 @@ def run_diffusion_end2end_evaluation(base_model, denoiser, sampler, stats, weigh
         logging.warning('No evaluation records were generated.')
         return
 
-    summary_clip = df.groupby('dataset')[['mae', 'rmse']].mean()
-    summary_raw = df.groupby('dataset')[['mae_raw', 'rmse_raw']].mean()
+    summary_clip = df.groupby('dataset')[['mae', 'rmse', 'mape']].mean()
+    summary_raw = df.groupby('dataset')[['mae_raw', 'rmse_raw', 'mape_raw']].mean()
     logging.info(f"\n=== 扩散模型评估摘要 (clipped [0,1]) ===\n{summary_clip}")
     logging.info(f"\n=== 扩散模型评估摘要 (raw) ===\n{summary_raw}")
     logging.info(f"报告已保存: {result_path}")
@@ -238,7 +244,7 @@ if __name__ == "__main__":
     
     # 模型与统计量路径
     base_model_path = res_dir / 'GMA-NET.pkl'
-    diffusion_model_path = res_dir / 'WeightDiffusion_steps{args.diffusion_steps}_dim{denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
+    diffusion_model_path = res_dir / f'WeightDiffusion_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
     stats_path = res_dir / 'diffusion_stats.pth'
     init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
     

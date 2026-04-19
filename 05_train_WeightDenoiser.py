@@ -15,7 +15,7 @@ import math
 
 # 假设这些是你自定义的项目模块
 from battery_data import BatteryData
-from model import GMANetPreTrain, WeightDenoiser 
+from model import GMANet, GMANetPreTrain, WeightDenoiser 
 
 # ==============================================================================
 # 1. 扩散调度类 (Simple DDPM Scheduler)
@@ -110,6 +110,17 @@ def load_frozen_encoder(pretrained_path, device):
         p.requires_grad = False
     return encoder
 
+
+def load_frozen_soh_evaluator(pretrained_path, device):
+    """加载冻结的 SOH 评估器，用于训练时的直达 SOH 约束。"""
+    model = GMANet().to(device)
+    state_dict = torch.load(pretrained_path, map_location=device)
+    model.load_state_dict(state_dict, strict=False)
+    model.eval()
+    for p in model.parameters():
+        p.requires_grad = False
+    return model
+
 def build_X_from_cycles(cycles, frozen_encoder, device):
     """ 将原始电池循环数据（电压/容量曲线）输入编码器，转换为高维特征向量 """
     cycles_tensor = torch.from_numpy(cycles).float() if isinstance(cycles, np.ndarray) else cycles.float()
@@ -154,6 +165,22 @@ def load_data_flattened(weight_path, device, train_dir, local_num, global_num, e
     return target_vec.cpu(), torch.tensor(l_cyc), torch.tensor(g_cyc)
 
 
+def load_target_soh(weight_path, train_dir, window_size):
+    """根据权重文件名定位对应电池，并取与评估一致的完整窗口 SOH 作为监督信号。"""
+    parts = weight_path.stem.split("_")
+    start_idx = int(parts[-1])
+    battery_name = "_".join(parts[:-1])
+    battery_path = train_dir / f"{battery_name}.pkl"
+    battery = BatteryData.load(str(battery_path))
+
+    end_idx = min(start_idx + window_size, len(battery.cycle_data))
+    window_cycles = battery.cycle_data[start_idx:end_idx]
+    target_soh = [cycle.labeled_soh for cycle in window_cycles]
+    if not target_soh or any(soh is None for soh in target_soh):
+        raise ValueError(f"Missing labeled_soh in {battery_path} for window [{start_idx}, {end_idx})")
+    return torch.tensor(target_soh, dtype=torch.float32)
+
+
 def load_pretrained_abs_init(init_abs_path, device):
     """加载 GMA 预训练导出的 A/B/S 原型并转换为 385 维初始化向量。"""
     if not init_abs_path.exists():
@@ -183,12 +210,30 @@ def load_pretrained_abs_init(init_abs_path, device):
 # 3. 核心训练逻辑
 # ==============================================================================
 
-def train_diffusion(train_loader, model_save_path, device, diffusion_steps, denoiser_hidden_dim, epochs=100000):
+def train_diffusion(
+    train_loader,
+    model_save_path,
+    device,
+    diffusion_steps,
+    denoiser_hidden_dim,
+    window_size,
+    target_mean,
+    target_std,
+    soh_evaluator,
+    epochs=100000,
+    use_soh_loss=True,
+    use_log_s_reg=True,
+    use_dynamic_weights=True,
+):
     # 扩散步数与网络宽度需和评估保持一致
     diff_manager = DiffusionManager(T=diffusion_steps, device=device)
 
     # 定义去噪网络：输入 (噪声向量, 时间步, 全局特征, 局部特征)
     model = WeightDenoiser(weight_dim=385, hidden_dim=denoiser_hidden_dim).to(device)
+    
+    # 移动目标统计值到设备
+    target_mean = target_mean.to(device)
+    target_std = target_std.to(device)
     
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-5)
     
@@ -206,8 +251,11 @@ def train_diffusion(train_loader, model_save_path, device, diffusion_steps, deno
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
-        for target_vec, feat_l, feat_g in train_loader:
-            target_vec, feat_l, feat_g = target_vec.to(device), feat_l.to(device), feat_g.to(device)
+        for target_vec, feat_l, feat_g, target_soh in train_loader:
+            target_vec = target_vec.to(device)
+            feat_l = feat_l.to(device)
+            feat_g = feat_g.to(device)
+            target_soh = target_soh.to(device)
             
             # 随机采样时间步 t
             t = torch.randint(0, diff_manager.T, (target_vec.shape[0],), device=device).long()
@@ -234,22 +282,52 @@ def train_diffusion(train_loader, model_save_path, device, diffusion_steps, deno
             pred_x0 = (z_t - sqrt_one_minus_ab_t * predicted_noise) / (sqrt_ab_t + 1e-8)
 
             vec_loss = F.mse_loss(pred_x0[:, :384], target_vec[:, :384])
-            log_s_loss = F.smooth_l1_loss(pred_x0[:, 384], target_vec[:, 384], beta=0.1)
+            pred_log_s = pred_x0[:, 384:385]
+            target_log_s = target_vec[:, 384:385]
+            log_s_fit_loss = F.smooth_l1_loss(pred_log_s, target_log_s, beta=0.1)
+            if use_log_s_reg:
+                log_s_mean = target_log_s.mean().detach()
+                log_s_std = target_log_s.std().detach().clamp_min(1e-8)
+                log_s_reg_loss = torch.mean(((pred_log_s - log_s_mean) / log_s_std) ** 2)
+                log_s_loss = log_s_fit_loss + 0.3 * log_s_reg_loss
+            else:
+                log_s_loss = log_s_fit_loss
 
             # 3) 在下游实际使用的 W 空间做一致性约束，减小“向量 MSE 好但 SOH 差”
-            p_A = pred_x0[:, 0:256].view(-1, 64, 4)
-            p_B = pred_x0[:, 256:384].view(-1, 4, 32)
-            p_log_s = torch.clamp(pred_x0[:, 384:385], min=-5.0, max=5.0)
+            pred_x0_raw = pred_x0 * target_std + target_mean
+            target_x0_raw = target_vec * target_std + target_mean
 
-            t_A = target_vec[:, 0:256].view(-1, 64, 4)
-            t_B = target_vec[:, 256:384].view(-1, 4, 32)
-            t_log_s = torch.clamp(target_vec[:, 384:385], min=-5.0, max=5.0)
+            p_A = pred_x0_raw[:, 0:256].view(-1, 64, 4)
+            p_B = pred_x0_raw[:, 256:384].view(-1, 4, 32)
+            p_log_s = torch.clamp(pred_x0_raw[:, 384:385], min=-5.0, max=5.0)
+
+            t_A = target_x0_raw[:, 0:256].view(-1, 64, 4)
+            t_B = target_x0_raw[:, 256:384].view(-1, 4, 32)
+            t_log_s = torch.clamp(target_x0_raw[:, 384:385], min=-5.0, max=5.0)
 
             pred_W = torch.exp(p_log_s).view(-1, 1, 1) * torch.bmm(p_A, p_B)
             target_W = torch.exp(t_log_s).view(-1, 1, 1) * torch.bmm(t_A, t_B)
             w_loss = F.mse_loss(pred_W, target_W)
 
-            loss = noise_loss + 0.2 * vec_loss + 0.5 * log_s_loss + 0.2 * w_loss
+            soh_loss = torch.tensor(0.0, device=device)
+            if use_soh_loss:
+                pooled_feat = 0.5 * (feat_l.mean(dim=1) + feat_g.mean(dim=1))
+                pred_soh = soh_evaluator.apply_lora(pooled_feat, p_A, p_B, p_log_s)
+                pred_soh_window = pred_soh.expand(-1, target_soh.size(1))
+                soh_loss = F.smooth_l1_loss(pred_soh_window, target_soh, beta=0.02)
+
+            # 4) 多任务损失权重动态调整
+            if use_dynamic_weights:
+                progress = min((epoch + 1) / max(epochs, 1), 1.0)
+                noise_w = 1.0 * (1 - 0.3 * progress)
+                vec_w = 0.2 * (1 + 1.0 * progress)
+                log_s_w = 0.5 * (1 + 0.5 * progress)
+                w_w = 0.2 * (1 + 1.5 * progress)
+                soh_w = 0.8 * (0.5 + 1.0 * progress)
+            else:
+                noise_w, vec_w, log_s_w, w_w, soh_w = 1.0, 0.2, 0.5, 0.2, 0.8
+
+            loss = noise_w * noise_loss + vec_w * vec_loss + log_s_w * log_s_loss + w_w * w_loss + soh_w * soh_loss
             
             loss.backward()
             
@@ -339,6 +417,9 @@ if __name__ == "__main__":
     parser.add_argument("--global_num_cycles", type=int, default=20)
     parser.add_argument("--diffusion_steps", type=int, default=400)
     parser.add_argument("--denoiser_hidden_dim", type=int, default=512)
+    parser.add_argument("--use_soh_loss", action="store_true", default=True, help="Enable direct SOH supervision")
+    parser.add_argument("--use_log_s_reg", action="store_true", default=True, help="Enable independent log_s regularization")
+    parser.add_argument("--use_dynamic_weights", action="store_true", default=True, help="Enable epoch-based multi-task weight annealing")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -357,6 +438,7 @@ if __name__ == "__main__":
     
     # 预加载特征提取器
     encoder = load_frozen_encoder(res_dir / 'GMA-NET.pkl', device)
+    soh_evaluator = load_frozen_soh_evaluator(res_dir / 'GMA-NET.pkl', device)
     init_vec = load_pretrained_abs_init(init_abs_path, device)
 
     # 第一阶段：训练数据预处理与 Z-Score 统计计算
@@ -366,10 +448,11 @@ if __name__ == "__main__":
     
     for f in tqdm(train_files, desc="缓存训练数据"):
         target, l_cyc, g_cyc = load_data_flattened(f, device, labeled_dir/'train', args.local_num_cycles, args.global_num_cycles)
+        target_soh = load_target_soh(f, labeled_dir/'train', args.window_size)
         f_l = build_X_from_cycles(l_cyc, encoder, device)
         f_g = build_X_from_cycles(g_cyc, encoder, device)
         all_targets.append(target)
-        raw_cache.append((target, f_l, f_g))
+        raw_cache.append((target, f_l, f_g, target_soh))
     
     # 统计 385 维向量在整个训练集上的均值和标准差（必须在训练前做，扩散模型要求输入均值为 0）
     all_targets_tensor = torch.stack(all_targets)
@@ -378,7 +461,7 @@ if __name__ == "__main__":
     torch.save({'mean': t_mean, 'std': t_std}, stats_path)
 
     # 应用归一化到缓存数据中
-    norm_cached_data = [((t - t_mean)/t_std, fl, fg) for t, fl, fg in raw_cache]
+    norm_cached_data = [((t - t_mean)/t_std, fl, fg, target_soh) for t, fl, fg, target_soh in raw_cache]
     train_loader = DataLoader(HyperCacheDataset(norm_cached_data), batch_size=64, shuffle=True)
 
     # 第二阶段：执行扩散模型去噪网络训练
@@ -388,7 +471,14 @@ if __name__ == "__main__":
         model_save_path,
         device,
         diffusion_steps=args.diffusion_steps,
-        denoiser_hidden_dim=args.denoiser_hidden_dim
+        denoiser_hidden_dim=args.denoiser_hidden_dim,
+        window_size=args.window_size,
+        target_mean=t_mean,
+        target_std=t_std,
+        soh_evaluator=soh_evaluator,
+        use_soh_loss=args.use_soh_loss,
+        use_log_s_reg=args.use_log_s_reg,
+        use_dynamic_weights=args.use_dynamic_weights,
     )
 
     # 第三阶段：推理生成并评估效果
