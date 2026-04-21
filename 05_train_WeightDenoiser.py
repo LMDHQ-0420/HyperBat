@@ -431,10 +431,10 @@ if __name__ == "__main__":
     res_dir = Path(config.path.results_dir)
     csv_dir = res_dir / "diffusion_results"
     csv_dir.mkdir(parents=True, exist_ok=True)
-    model_save_path = res_dir / f'WeightDiffusion_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
+    model_save_path = res_dir / f'WeightDiffusion_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
     stats_path = res_dir / 'diffusion_stats.pth'
     init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
-    csv_path = csv_dir / f'test_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.csv'
+    csv_path = csv_dir / f'test_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.csv'
     
     # 预加载特征提取器
     encoder = load_frozen_encoder(res_dir / 'GMA-NET.pkl', device)

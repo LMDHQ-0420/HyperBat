@@ -244,11 +244,11 @@ if __name__ == "__main__":
     
     # 模型与统计量路径
     base_model_path = res_dir / 'GMA-NET.pkl'
-    diffusion_model_path = res_dir / f'WeightDiffusion_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
+    diffusion_model_path = res_dir / f'WeightDiffusion_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
     stats_path = res_dir / 'diffusion_stats.pth'
     init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
     
-    result_path = csv_dir / f'end2end_wsize{args.window_size}_stride{args.stride}.csv'
+    result_path = csv_dir / f'end2end_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.csv'
 
     # --- 加载模型 ---
     # 1. Base Model (GMANet)

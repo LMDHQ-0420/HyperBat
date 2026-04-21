@@ -1,1 +1,17 @@
 nohup: ignoring input
+Running local=5, global=20
+Running local=8, global=20
+Running local=10, global=25
+Running local=12, global=30
+Running local=15, global=30
+Running local=18, global=40
+Running local=20, global=40
+Running local=25, global=50
+Running local=30, global=60
+Running local=35, global=70
+Running local=40, global=80
+Running local=45, global=90
+Running local=50, global=100
+Running local=20, global=80
+Running local=10, global=100
+./locah_grid_search.sh: line 40: unexpected EOF while looking for matching `"'
