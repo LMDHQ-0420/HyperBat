@@ -5,3 +5,6 @@ Running local=5, global=20, diffusion_steps=5
 Running local=5, global=20, diffusion_steps=10
 Running local=5, global=20, diffusion_steps=15
 Running local=5, global=20, diffusion_steps=20
+Running local=5, global=20, diffusion_steps=30
+Terminated
+Running local=5, global=20, diffusion_steps=40

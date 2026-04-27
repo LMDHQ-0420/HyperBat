@@ -14,6 +14,26 @@ from battery_data import BatteryData
 from model import GMANet, WeightDenoiser, FlowMatchingDenoiser  # 确保导入扩散模型类
 
 
+def infer_cycle_input_dim(weights_dir, labeled_dir):
+    """Infer raw cycle feature length from the first available test sample."""
+    test_subdirs = sorted([d for d in weights_dir.iterdir() if d.is_dir() and d.name.startswith('test_')])
+    for subdir in test_subdirs:
+        weight_files = sorted(subdir.glob('*.pkl'))
+        if not weight_files:
+            continue
+        f = weight_files[0]
+        parts = f.stem.split("_")
+        battery_name = "_".join(parts[:-1])
+        battery_path = labeled_dir / subdir.name / f"{battery_name}.pkl"
+        if not battery_path.exists():
+            continue
+        battery = BatteryData.load(str(battery_path))
+        if len(battery.cycle_data) == 0:
+            continue
+        return int(np.asarray(battery.cycle_data[0].labeled_Qc, dtype=np.float32).shape[-1])
+    raise RuntimeError('Unable to infer cycle input dimension from test data.')
+
+
 def load_pretrained_abs_init(init_abs_path, device):
     """加载 GMA 预训练导出的 A/B/S 原型并转换为 385 维初始化向量。"""
     if not init_abs_path.exists():
@@ -169,8 +189,8 @@ def run_diffusion_end2end_evaluation(base_model, denoiser, sampler, stats, weigh
             # --- 3. 扩散采样推理 ---
             with torch.no_grad():
                 # A. 提取指纹特征
-                feat_g = base_model.encoder(g_cyc).unsqueeze(0)
-                feat_l = base_model.encoder(l_cyc).unsqueeze(0)
+                feat_g = g_cyc.unsqueeze(0).float()
+                feat_l = l_cyc.unsqueeze(0).float()
                 
                 # B. 采样生成标准化向量 (1, 385)
                 gen_vec_norm = sampler.sample(denoiser, feat_g, feat_l, init_vec=init_vec_norm)
@@ -287,7 +307,8 @@ if __name__ == "__main__":
     
     # 2. Denoiser (Diffusion or Flow Matching)
     denoiser_cls = WeightDenoiser if args.denoiser_type == "diff" else FlowMatchingDenoiser
-    denoiser = denoiser_cls(weight_dim=385, hidden_dim=args.denoiser_hidden_dim).to(device)
+    cond_input_dim = infer_cycle_input_dim(weights_dir, labeled_dir)
+    denoiser = denoiser_cls(weight_dim=385, hidden_dim=args.denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
     denoiser.load_state_dict(torch.load(diffusion_model_path, map_location=device))
     
     # 3. Z-Score Stats
