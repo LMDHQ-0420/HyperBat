@@ -388,9 +388,9 @@ if __name__ == "__main__":
     logging.info(f"Slide mode: {slide} | window_size={window_size}, stride={stride}")
 
     labeled_dir = Path(config.path.labeled_dir)
-    result_dir = Path(config.path.results_dir) / 'create_weights'
-    result_dir.mkdir(parents=True, exist_ok=True)
-    pretrained_path = Path(config.path.results_dir) / 'GMA-NET.pkl'
+    results_dir = Path(config.path.create_weights_results_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    pretrained_path = Path(config.path.models_dir) / 'GMA-NET.pkl'
     if not slide:
         weights_dir = Path(config.path.weights_dir) / 'full'
         result_file_name = 'GMANet_full_test'
@@ -419,7 +419,7 @@ if __name__ == "__main__":
             train(windows, model, device, sub_weights_dir, file.stem)
 
             # 3. 测试与记录结果 (循环所有窗口进行测试记录)
-            result_path = result_dir / f'{result_file_name}_{data_dir.name}.csv'
+            result_path = results_dir / f'{result_file_name}_{data_dir.name}.csv'
             for i in range(len(windows)):
                 start_idx = windows[i]['start_idx']
                 weights_path = sub_weights_dir / f'{file.stem}_{start_idx}.pkl'

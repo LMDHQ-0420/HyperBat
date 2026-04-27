@@ -1,0 +1,7 @@
+nohup: ignoring input
+Running local=5, global=20, diffusion_steps=1
+Running local=5, global=20, diffusion_steps=3
+Running local=5, global=20, diffusion_steps=5
+Running local=5, global=20, diffusion_steps=10
+Running local=5, global=20, diffusion_steps=15
+Running local=5, global=20, diffusion_steps=20

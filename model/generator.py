@@ -114,7 +114,7 @@ class WeightDenoiser(nn.Module):
     核心去噪网络：基于 Transformer 解码器结构
     输入：x_t (385维噪声), t (时间步), global_feats (变长), local_feats (变长)
     """
-    def __init__(self, weight_dim=385, hidden_dim=256, nhead=8):
+    def __init__(self, weight_dim=385, hidden_dim=512, nhead=8):
         super().__init__()
         # 1. 时间步嵌入
         self.time_mlp = nn.Sequential(
@@ -179,3 +179,9 @@ class WeightDenoiser(nn.Module):
         if embedding_dim % 2 == 1:
             emb = nn.functional.pad(emb, (0, 1))
         return emb
+
+class FlowMatchingDenoiser(WeightDenoiser):
+    """
+    与 WeightDenoiser 结构一致，仅用于在训练与评估脚本中按 denoiser_type 做模型切换。
+    """
+    pass

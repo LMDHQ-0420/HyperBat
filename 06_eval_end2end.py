@@ -11,7 +11,7 @@ import argparse
 import torch.nn.functional as F
 
 from battery_data import BatteryData
-from model import GMANet, WeightDenoiser  # 确保导入扩散模型类
+from model import GMANet, WeightDenoiser, FlowMatchingDenoiser  # 确保导入扩散模型类
 
 
 def load_pretrained_abs_init(init_abs_path, device):
@@ -85,6 +85,30 @@ class DiffusionSampler:
             ) + torch.sqrt(beta_t) * noise
 
             # 与训练采样保持一致：防止离群值在反归一化后放大
+            cur_x = torch.clamp(cur_x, -5.0, 5.0)
+
+        return cur_x
+
+
+class FlowMatchingSampler:
+    def __init__(self, T=20, device='cuda'):
+        self.T = T
+        self.device = device
+
+    @torch.no_grad()
+    def sample(self, model, feat_g, feat_l, init_vec=None):
+        model.eval()
+        if init_vec is None:
+            cur_x = torch.randn((1, 385), device=self.device)
+        else:
+            cur_x = init_vec.view(1, -1)
+        dt = 1.0 / max(self.T, 1)
+
+        for i in range(self.T):
+            t_value = i / max(self.T, 1)
+            t = torch.full((1,), t_value, device=self.device, dtype=torch.float32)
+            velocity = model(cur_x, t, feat_g, feat_l)
+            cur_x = cur_x + dt * velocity
             cur_x = torch.clamp(cur_x, -5.0, 5.0)
 
         return cur_x
@@ -228,6 +252,7 @@ if __name__ == "__main__":
     parser.add_argument("--global_num_cycles", type=int, default=20)
     parser.add_argument("--diffusion_steps", type=int, default=400)
     parser.add_argument("--denoiser_hidden_dim", type=int, default=512)
+    parser.add_argument("--denoiser_type", type=str, default="diff", choices=["diff", "flow"])
     parser.add_argument("--log_s_clip", type=float, default=5.0)
     args = parser.parse_args()
 
@@ -235,28 +260,34 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # 路径配置
-    res_dir = Path(config.path.results_dir)
-    csv_dir = res_dir / "diffusion_results"
-    csv_dir.mkdir(parents=True, exist_ok=True)
+    results_dir = Path(config.path.diffusion_results_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    diffusion_models_dir = Path(config.path.diffusion_models_dir)
+    gma_models_dir = Path(config.path.gma_models_dir)
     
     labeled_dir = Path(config.path.labeled_dir)
     weights_dir = Path(config.path.weights_dir) / f'wsize_{args.window_size}_stride_{args.stride}'
     
     # 模型与统计量路径
-    base_model_path = res_dir / 'GMA-NET.pkl'
-    diffusion_model_path = res_dir / f'WeightDiffusion_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
-    stats_path = res_dir / 'diffusion_stats.pth'
-    init_abs_path = res_dir / 'GMA_pretrained_abs.pth'
+    base_model_path = gma_models_dir / 'GMA-NET.pkl'
+    if args.denoiser_type == "diff":
+        diffusion_model_path = diffusion_models_dir / f'WeightDiffusion_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
+        stats_path = diffusion_models_dir / f'diffusion_stats_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pth'
+    else:
+        diffusion_model_path = diffusion_models_dir / f'WeightFlowMatching_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pkl'
+        stats_path = diffusion_models_dir / f'flow_matching_stats_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.pth'
+    init_abs_path = gma_models_dir / 'GMA_pretrained_abs.pth'
     
-    result_path = csv_dir / f'end2end_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.csv'
+    result_path = results_dir / f'end2end_{args.denoiser_type}_local{args.local_num_cycles}_global{args.global_num_cycles}_steps{args.diffusion_steps}_dim{args.denoiser_hidden_dim}_wsize{args.window_size}_stride{args.stride}.csv'
 
     # --- 加载模型 ---
     # 1. Base Model (GMANet)
     base_model = GMANet(rank=4).to(device)
     base_model.load_state_dict(torch.load(base_model_path, map_location=device), strict=False)
     
-    # 2. Diffusion Denoiser
-    denoiser = WeightDenoiser(weight_dim=385, hidden_dim=args.denoiser_hidden_dim).to(device)
+    # 2. Denoiser (Diffusion or Flow Matching)
+    denoiser_cls = WeightDenoiser if args.denoiser_type == "diff" else FlowMatchingDenoiser
+    denoiser = denoiser_cls(weight_dim=385, hidden_dim=args.denoiser_hidden_dim).to(device)
     denoiser.load_state_dict(torch.load(diffusion_model_path, map_location=device))
     
     # 3. Z-Score Stats
@@ -266,7 +297,7 @@ if __name__ == "__main__":
     init_vec = load_pretrained_abs_init(init_abs_path, device)
 
     # 4. Sampler
-    sampler = DiffusionSampler(T=args.diffusion_steps, device=device)
+    sampler = DiffusionSampler(T=args.diffusion_steps, device=device) if args.denoiser_type == "diff" else FlowMatchingSampler(T=args.diffusion_steps, device=device)
 
     base_model.eval()
     denoiser.eval()

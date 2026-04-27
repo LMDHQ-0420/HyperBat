@@ -3,3 +3,4 @@ nohup bash -c "python 05_train_WeightDenoiser.py > 05.txt 2>&1 && python 06_eval
 
 chmod +x run.sh
 nohup ./run.sh > all.log 2>&1 &
+ps aux | grep python

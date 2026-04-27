@@ -333,11 +333,12 @@ if __name__ == "__main__":
     labeled_dir = config.path.labeled_dir
     train_dir = os.path.join(labeled_dir, 'train')
     
-    result_dir = config.path.results_dir
-    model_path = os.path.join(result_dir, 'GMA-NET.pkl')
-    test_result_path = os.path.join(result_dir, 'pretrain', 'GMANetPreTrain_test.csv')
-    abs_path = os.path.join(result_dir, 'GMA_pretrained_abs.pth')
-    os.makedirs(result_dir, exist_ok=True)
+    results_dir = config.path.pretrain_results_dir
+    models_dir = config.path.models_dir
+    model_path = os.path.join(models_dir, 'GMA-NET.pkl')
+    abs_path = os.path.join(models_dir, 'GMA_pretrained_abs.pth')
+    test_result_path = os.path.join(results_dir, 'GMANetPreTrain_test.csv')
+    os.makedirs(results_dir, exist_ok=True)
 
     X, y, samples_weights = read_dataset(Path(train_dir))
     train(X, y, samples_weights, Path(model_path), Path(abs_path))

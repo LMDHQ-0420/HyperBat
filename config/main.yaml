@@ -3,7 +3,15 @@ path:
     preprocessed_dir: data/preprocessed
     labeled_dir: data/labeled
     weights_dir: data/weights
+
     results_dir: results
+    pretrain_results_dir: results/pretrain
+    create_weights_results_dir: results/create_weights
+    diffusion_results_dir: results/diffusion
+
+    models_dir: models
+    gma_models_dir: models/gma
+    diffusion_models_dir: models/diffusion
 
 train_ratio:
     CALCE: 0.0
