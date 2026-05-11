@@ -11,5 +11,3 @@ __pycache__/
 
 # 编辑器配置
 .vscode/
-
-.logs/05_diff_l5_g20_s20_d512_w200_s50.txt
