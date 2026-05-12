@@ -17,6 +17,8 @@ import math
 from battery_data import BatteryData
 from model import GMANet, GMANetPreTrain, WeightDenoiser, FlowMatchingDenoiser 
 
+W_DIM = 64 * 32
+
 # ==============================================================================
 # 1. 扩散调度类 (Simple DDPM Scheduler)
 # 该类负责管理加噪（Forward）和去噪（Reverse）的数学过程
@@ -173,23 +175,22 @@ def build_X_from_cycles(cycles, frozen_encoder, device):
 def load_data_flattened(weight_path, device, train_dir, local_num, global_num, eps=1e-8):
     """
     数据预处理核心逻辑：
-    1. 将 LoRA 的 A 和 B 矩阵分解为“方向”和“能量(log_s)”
-    2. 将其拼接成一个 385 维的平坦向量，作为扩散模型生成的目标
+    1. 直接使用窗口权重 W(64x32)
+    2. 展平为 2048 维向量，作为 Diff/Flow 的生成目标
     """
     weights = torch.load(weight_path, map_location=device)
-    p_A, p_B = weights["param_A"].to(device).float(), weights["param_B"].to(device).float()
-
-    # 如果上游已显式保存 log_s，则优先使用该值；否则由 A/B 范数恢复
-    A_norm = p_A / (torch.norm(p_A, p="fro") + eps)
-    B_norm = p_B / (torch.norm(p_B, p="fro") + eps)
-    if "param_log_s" in weights:
-        log_s = weights["param_log_s"].to(device).float().view(1)
+    if "weight_W" in weights:
+        target_vec = weights["weight_W"].to(device).float().view(-1)
     else:
-        norm_val = torch.norm(p_A, p="fro") * torch.norm(p_B, p="fro")
-        log_s = torch.log(norm_val + eps).view(1)
-
-    # 目标向量组成：A(16x16=256) + B(16x8=128) + log_s(1) = 385 维
-    target_vec = torch.cat([A_norm.flatten(), B_norm.flatten(), log_s])
+        # 向后兼容旧权重文件：由 A/B/log_s 还原 W
+        p_A, p_B = weights["param_A"].to(device).float(), weights["param_B"].to(device).float()
+        if "param_log_s" in weights:
+            p_log_s = weights["param_log_s"].to(device).float().view(1)
+        else:
+            norm_val = torch.norm(p_A, p="fro") * torch.norm(p_B, p="fro")
+            p_log_s = torch.log(norm_val + eps).view(1)
+        scale = torch.exp(torch.clamp(p_log_s, min=-5.0, max=5.0)).view(1, 1)
+        target_vec = (scale * torch.matmul(p_A, p_B)).contiguous().view(-1)
 
     # 根据文件名查找对应的电池原始数据文件
     parts = weight_path.stem.split("_")
@@ -235,26 +236,28 @@ def load_window_cycles(weight_path, train_dir, window_size):
 
 
 def load_pretrained_abs_init(init_abs_path, device):
-    """加载 GMA 预训练导出的 A/B/S 原型并转换为 385 维初始化向量。"""
+    """加载预训练初始化并转换为 2048 维 W 向量。"""
     if not init_abs_path.exists():
         logging.warning(f'ABS init file not found: {init_abs_path}. Fallback to random noise.')
         return None
 
     data = torch.load(init_abs_path, map_location=device)
-    if 'init_vec' in data:
+    if 'weight_W' in data:
+        init_vec = data['weight_W'].float().view(-1)
+    elif 'init_vec' in data and data['init_vec'].numel() == W_DIM:
         init_vec = data['init_vec'].float().view(-1)
     elif 'param_A' in data and 'param_B' in data and 'param_log_s' in data:
-        init_vec = torch.cat([
-            data['param_A'].float().view(-1),
-            data['param_B'].float().view(-1),
-            data['param_log_s'].float().view(-1),
-        ])
+        p_A = data['param_A'].float()
+        p_B = data['param_B'].float()
+        p_log_s = data['param_log_s'].float().view(1)
+        scale = torch.exp(torch.clamp(p_log_s, min=-5.0, max=5.0)).view(1, 1)
+        init_vec = (scale * torch.matmul(p_A, p_B)).contiguous().view(-1)
     else:
         logging.warning(f'Invalid ABS init format: {init_abs_path}. Fallback to random noise.')
         return None
 
-    if init_vec.numel() != 385:
-        logging.warning(f'ABS init size mismatch ({init_vec.numel()}). Expected 385. Fallback to random noise.')
+    if init_vec.numel() != W_DIM:
+        logging.warning(f'ABS init size mismatch ({init_vec.numel()}). Expected {W_DIM}. Fallback to random noise.')
         return None
 
     return init_vec.to(device)
@@ -285,7 +288,7 @@ def load_pretrained_abs_init(init_abs_path, device):
 
 #     # 定义去噪网络：输入 (噪声向量, 时间步, 全局特征, 局部特征)
 #     denoiser_cls = WeightDenoiser if denoiser_type == "diff" else FlowMatchingDenoiser
-#     model = denoiser_cls(weight_dim=385, hidden_dim=denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
+#     model = denoiser_cls(weight_dim=W_DIM, hidden_dim=denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
     
 #     # 移动目标统计值到设备
 #     target_mean = target_mean.to(device)
@@ -463,7 +466,7 @@ def train_diffusion(
 
     # 定义去噪网络
     denoiser_cls = WeightDenoiser if denoiser_type == "diff" else FlowMatchingDenoiser
-    model = denoiser_cls(weight_dim=385, hidden_dim=denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
+    model = denoiser_cls(weight_dim=W_DIM, hidden_dim=denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
     
     target_mean = target_mean.to(device)
     target_std = target_std.to(device)
@@ -498,12 +501,12 @@ def train_diffusion(
         if use_dynamic_weights:
             if in_soh_phase:
                 # SOH 主导阶段
-                noise_w, vec_w, log_s_w, w_w, soh_w = 0.3, 0.05, 0.75, 2.0, 10.0
+                noise_w, w_w, soh_w = 0.3, 2.0, 10.0
             else:
                 # 基础阶段
-                noise_w, vec_w, log_s_w, w_w, soh_w = 1.0, 0.2, 0.5, 0.2, 0.8
+                noise_w, w_w, soh_w = 1.0, 0.5, 0.8
         else:
-            noise_w, vec_w, log_s_w, w_w, soh_w = 1.0, 0.2, 0.5, 0.2, 0.8
+            noise_w, w_w, soh_w = 1.0, 0.5, 0.8
 
         for target_vec, feat_l, feat_g, w_cyc, target_soh in train_loader:
             target_vec = target_vec.to(device)
@@ -511,7 +514,7 @@ def train_diffusion(
             feat_g = feat_g.to(device)
             w_cyc = w_cyc.to(device)
             target_soh = target_soh.to(device)
-            
+
             optimizer.zero_grad()
 
             if denoiser_type == "diff":
@@ -520,9 +523,7 @@ def train_diffusion(
                 anchor_vec = init_vec_norm.expand(target_vec.shape[0], -1)
                 z_t = diff_manager.q_sample_with_anchor(target_vec, anchor_vec, t, noise)
                 predicted_signal = model(z_t, t, feat_g, feat_l)
-                signal_loss_map = F.mse_loss(predicted_signal, noise, reduction='none')
-                signal_loss_map[:, -1] *= 20.0
-                base_loss = signal_loss_map.mean()
+                base_loss = F.mse_loss(predicted_signal, noise)
                 sqrt_ab_t = torch.sqrt(diff_manager.alphas_cumprod[t]).view(-1, 1)
                 sqrt_one_minus_ab_t = torch.sqrt(1 - diff_manager.alphas_cumprod[t]).view(-1, 1)
                 pred_x0 = anchor_vec + (z_t - anchor_vec - sqrt_one_minus_ab_t * predicted_signal) / (sqrt_ab_t + 1e-8)
@@ -533,50 +534,24 @@ def train_diffusion(
                 z_t = (1.0 - t_view) * base_sample + t_view * target_vec
                 target_flow = target_vec - base_sample
                 predicted_signal = model(z_t, t, feat_g, feat_l)
-                signal_loss_map = F.mse_loss(predicted_signal, target_flow, reduction='none')
-                signal_loss_map[:, -1] *= 20.0
-                base_loss = signal_loss_map.mean()
+                base_loss = F.mse_loss(predicted_signal, target_flow)
                 pred_x0 = z_t + (1.0 - t_view) * predicted_signal
 
-            vec_loss = F.mse_loss(pred_x0[:, :384], target_vec[:, :384])
-            pred_log_s = pred_x0[:, 384:385]
-            target_log_s = target_vec[:, 384:385]
-            log_s_fit_loss = F.smooth_l1_loss(pred_log_s, target_log_s, beta=0.1)
-            if use_log_s_reg:
-                log_s_mean = target_log_s.mean().detach()
-                log_s_std = target_log_s.std().detach().clamp_min(1e-8)
-                log_s_reg_loss = torch.mean(((pred_log_s - log_s_mean) / log_s_std) ** 2)
-                log_s_loss = log_s_fit_loss + 0.3 * log_s_reg_loss
-            else:
-                log_s_loss = log_s_fit_loss
-
-            # 反归一化得到物理空间权重
+            # 反归一化得到物理空间 W
             pred_x0_raw = pred_x0 * target_std + target_mean
             target_x0_raw = target_vec * target_std + target_mean
 
-            p_A = pred_x0_raw[:, 0:256].view(-1, 64, 4)
-            p_B = pred_x0_raw[:, 256:384].view(-1, 4, 32)
-            p_log_s = torch.clamp(pred_x0_raw[:, 384:385], min=-5.0, max=5.0)
-
-            t_A = target_x0_raw[:, 0:256].view(-1, 64, 4)
-            t_B = target_x0_raw[:, 256:384].view(-1, 4, 32)
-            t_log_s = torch.clamp(target_x0_raw[:, 384:385], min=-5.0, max=5.0)
-
-            # w_loss 仅监控，不参与反向传播
-            pred_W = torch.exp(p_log_s).view(-1, 1, 1) * torch.bmm(p_A, p_B)
-            target_W = torch.exp(t_log_s).view(-1, 1, 1) * torch.bmm(t_A, t_B)
+            pred_W = pred_x0_raw.view(-1, 64, 32)
+            target_W = target_x0_raw.view(-1, 64, 32)
             w_loss = F.mse_loss(pred_W, target_W)
 
             soh_loss = torch.tensor(0.0, device=device)
             if use_soh_loss:
                 feat_w = build_X_from_cycles(w_cyc.reshape(-1, w_cyc.shape[-1]), encoder, device)
                 feat_w = feat_w.view(w_cyc.shape[0], w_cyc.shape[1], -1).to(device)
-                pred_soh = soh_evaluator.apply_lora(
-                    feat_w.reshape(-1, feat_w.shape[-1]),
-                    p_A.repeat_interleave(feat_w.shape[1], dim=0),
-                    p_B.repeat_interleave(feat_w.shape[1], dim=0),
-                    p_log_s.repeat_interleave(feat_w.shape[1], dim=0),
-                )
+                pred_W_batch = pred_W.repeat_interleave(feat_w.shape[1], dim=0)
+                aligned = torch.bmm(feat_w.reshape(-1, feat_w.shape[-1]).unsqueeze(1), pred_W_batch).squeeze(1)
+                pred_soh = soh_evaluator.head(aligned)
                 soh_loss = F.smooth_l1_loss(pred_soh.view_as(target_soh), target_soh, beta=0.02)
 
             # 梯度强度采集（每10个epoch收集一次）
@@ -591,7 +566,7 @@ def train_diffusion(
                 soh_grad_norm = None
 
             # 总损失
-            loss = noise_w * base_loss + vec_w * vec_loss + log_s_w * log_s_loss + soh_w * soh_loss
+            loss = noise_w * base_loss + w_w * w_loss + soh_w * soh_loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
@@ -647,7 +622,7 @@ def train_diffusion(
 
         logging.info(f"Epoch {epoch+1} | Loss: {avg_loss:.6f} | LR: {optimizer.param_groups[0]['lr']:.2e} | "
                      f"Phase: {'SOH' if in_soh_phase else 'Base'} | "
-                     f"Weights: noise={noise_w:.2f} vec={vec_w:.2f} log_s={log_s_w:.2f} SOH={soh_w:.2f}")
+                     f"Weights: noise={noise_w:.2f} W={w_w:.2f} SOH={soh_w:.2f}")
 # ==============================================================================
 # 4. 测试与推理逻辑 (反归一化还原)
 # ==============================================================================
@@ -662,7 +637,7 @@ def test_diffusion(model_path, stats_path, encoder, weights_dir, labeled_dir, de
         rmse = np.sqrt(mse)
         mape = np.mean(np.abs((target - pred) / (np.abs(target) + 1e-8))) * 100
         return mse, mae, rmse, mape
-    
+
     # 加载训练阶段保存的均值和标准差，用于反归一化
     stats = torch.load(stats_path, map_location=device)
     t_mean, t_std = stats['mean'].to(device), stats['std'].to(device)
@@ -675,120 +650,55 @@ def test_diffusion(model_path, stats_path, encoder, weights_dir, labeled_dir, de
     diff_manager = DiffusionManager(T=diffusion_steps, device=device)
     flow_manager = FlowMatchingManager(T=diffusion_steps, device=device)
     denoiser_cls = WeightDenoiser if denoiser_type == "diff" else FlowMatchingDenoiser
-    model = denoiser_cls(weight_dim=385, hidden_dim=denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
+    model = denoiser_cls(weight_dim=W_DIM, hidden_dim=denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
 
     results = []
     test_subdirs = sorted([d for d in weights_dir.iterdir() if d.is_dir() and d.name.startswith('test_')])
-    
+
     for subdir in test_subdirs:
         weight_files = sorted(subdir.glob('*.pkl'))
-        
-        # 累积每个分量的指标
-        metrics_A = {'mse': [], 'mae': [], 'rmse': [], 'mape': []}
-        metrics_B = {'mse': [], 'mae': [], 'rmse': [], 'mape': []}
-        metrics_S = {'mse': [], 'mae': [], 'rmse': [], 'mape': []}
+
+        # 仅保留 W 指标
         metrics_W = {'mse': [], 'mae': [], 'rmse': [], 'mape': []}
-        
+
         for f in tqdm(weight_files, desc=f"评估 {subdir.name}"):
-            # 得到物理量级的 target_vec
-            target_vec_raw, l_cyc, g_cyc = load_data_flattened(f, device, labeled_dir/subdir.name, local_num, global_num)
-            
-            # local/global 不再经过冻结 encoder，直接送入 denoiser 的注意力条件分支
+            target_vec_raw, l_cyc, g_cyc = load_data_flattened(f, device, labeled_dir / subdir.name, local_num, global_num)
+
             feat_l = l_cyc.unsqueeze(0).to(device).float()
             feat_g = g_cyc.unsqueeze(0).to(device).float()
-            
-            # 进行逆向采样
+
             if denoiser_type == "diff":
-                gen_vec_norm = diff_manager.p_sample_loop(model, feat_g, feat_l, (1, 385), init_vec=init_vec_norm)
+                gen_vec_norm = diff_manager.p_sample_loop(model, feat_g, feat_l, (1, W_DIM), init_vec=init_vec_norm)
             else:
-                gen_vec_norm = flow_manager.sample(model, feat_g, feat_l, (1, 385), init_vec=init_vec_norm)
-            
-            # 关键：反归一化还原回物理量级空间
-            gen_vec = gen_vec_norm * t_std + t_mean 
-            gen_vec = gen_vec.squeeze()
-            target_vec_raw = target_vec_raw.to(device)
-            
-            # 分离出 A、B、log_s 分量
-            pred_A = gen_vec[0:256]
-            pred_B = gen_vec[256:384]
-            pred_S = gen_vec[384:385]
-            
-            target_A = target_vec_raw[0:256]
-            target_B = target_vec_raw[256:384]
-            target_S = target_vec_raw[384:385]
-            
-            # 计算 A、B、S 的指标
-            mse_a, mae_a, rmse_a, mape_a = calc_metrics(pred_A, target_A)
-            mse_b, mae_b, rmse_b, mape_b = calc_metrics(pred_B, target_B)
-            mse_s, mae_s, rmse_s, mape_s = calc_metrics(pred_S, target_S)
-            
-            metrics_A['mse'].append(mse_a)
-            metrics_A['mae'].append(mae_a)
-            metrics_A['rmse'].append(rmse_a)
-            metrics_A['mape'].append(mape_a)
-            
-            metrics_B['mse'].append(mse_b)
-            metrics_B['mae'].append(mae_b)
-            metrics_B['rmse'].append(rmse_b)
-            metrics_B['mape'].append(mape_b)
-            
-            metrics_S['mse'].append(mse_s)
-            metrics_S['mae'].append(mae_s)
-            metrics_S['rmse'].append(rmse_s)
-            metrics_S['mape'].append(mape_s)
-            
-            # 计算 W = A * B * exp(log_s) 的指标
-            pred_A_mat = pred_A.view(64, 4)
-            pred_B_mat = pred_B.view(4, 32)
-            pred_s = torch.exp(pred_S)
-            pred_W = pred_s.item() * torch.mm(pred_A_mat, pred_B_mat)
-            
-            target_A_mat = target_A.view(64, 4)
-            target_B_mat = target_B.view(4, 32)
-            target_s = torch.exp(target_S)
-            target_W = target_s.item() * torch.mm(target_A_mat, target_B_mat)
-            
+                gen_vec_norm = flow_manager.sample(model, feat_g, feat_l, (1, W_DIM), init_vec=init_vec_norm)
+
+            gen_vec = gen_vec_norm * t_std + t_mean
+            pred_W = gen_vec.squeeze().view(64, 32)
+            target_W = target_vec_raw.to(device).view(64, 32)
+
             mse_w, mae_w, rmse_w, mape_w = calc_metrics(pred_W.flatten(), target_W.flatten())
             metrics_W['mse'].append(mse_w)
             metrics_W['mae'].append(mae_w)
             metrics_W['rmse'].append(rmse_w)
             metrics_W['mape'].append(mape_w)
-        
-        # 计算每个分量的平均指标
-        if len(metrics_A['mse']) > 0:
+
+        if len(metrics_W['mse']) > 0:
             row = {
                 'dataset': subdir.name,
-                'mse_A': np.mean(metrics_A['mse']),
-                'mae_A': np.mean(metrics_A['mae']),
-                'rmse_A': np.mean(metrics_A['rmse']),
-                'mape_A': np.mean(metrics_A['mape']),
-                'mse_B': np.mean(metrics_B['mse']),
-                'mae_B': np.mean(metrics_B['mae']),
-                'rmse_B': np.mean(metrics_B['rmse']),
-                'mape_B': np.mean(metrics_B['mape']),
-                'mse_S': np.mean(metrics_S['mse']),
-                'mae_S': np.mean(metrics_S['mae']),
-                'rmse_S': np.mean(metrics_S['rmse']),
-                'mape_S': np.mean(metrics_S['mape']),
                 'mse_W': np.mean(metrics_W['mse']),
                 'mae_W': np.mean(metrics_W['mae']),
                 'rmse_W': np.mean(metrics_W['rmse']),
                 'mape_W': np.mean(metrics_W['mape']),
             }
             results.append(row)
-            logging.info(f"数据集 {subdir.name} | RMSE_A: {row['rmse_A']:.6f} | RMSE_B: {row['rmse_B']:.6f} | RMSE_S: {row['rmse_S']:.6f} | RMSE_W: {row['rmse_W']:.6f}")
+            logging.info(f"数据集 {subdir.name} | RMSE_W: {row['rmse_W']:.6f}")
 
-    columns = ['dataset', 
-               'mse_A', 'mae_A', 'rmse_A', 'mape_A',
-               'mse_B', 'mae_B', 'rmse_B', 'mape_B',
-               'mse_S', 'mae_S', 'rmse_S', 'mape_S',
-               'mse_W', 'mae_W', 'rmse_W', 'mape_W']
+    columns = ['dataset', 'mse_W', 'mae_W', 'rmse_W', 'mape_W']
     pd.DataFrame(results, columns=columns).to_csv(result_path, index=False)
     logging.info(f"结果已保存到: {result_path}")
 
-# ==============================================================================
 # 5. 主程序执行入口
 # ==============================================================================
 
@@ -851,7 +761,7 @@ if __name__ == "__main__":
         all_targets.append(target)
         raw_cache.append((target, f_l, f_g, w_cyc, target_soh))
     
-    # 统计 385 维向量在整个训练集上的均值和标准差（必须在训练前做，扩散模型要求 输入均值为 0）
+    # 统计 2048 维 W 向量在整个训练集上的均值和标准差
     all_targets_tensor = torch.stack(all_targets)
     t_mean = all_targets_tensor.mean(dim=0)
     t_std = all_targets_tensor.std(dim=0) + 1e-6

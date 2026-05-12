@@ -3,7 +3,3 @@ Running type=diff, local=40, global=200, steps=1, dim=256
 Running type=diff, local=40, global=200, steps=1, dim=512
 Running type=diff, local=40, global=200, steps=40, dim=256
 Running type=diff, local=40, global=200, steps=40, dim=512
-Running type=flow, local=40, global=200, steps=1, dim=256
-Running type=flow, local=40, global=200, steps=1, dim=512
-Running type=flow, local=40, global=200, steps=40, dim=256
-Running type=flow, local=40, global=200, steps=40, dim=512

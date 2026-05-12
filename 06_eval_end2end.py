@@ -13,6 +13,8 @@ import torch.nn.functional as F
 from battery_data import BatteryData
 from model import GMANet, WeightDenoiser, FlowMatchingDenoiser  # 确保导入扩散模型类
 
+W_DIM = 64 * 32
+
 
 def infer_cycle_input_dim(weights_dir, labeled_dir):
     """Infer raw cycle feature length from the first available test sample."""
@@ -35,30 +37,31 @@ def infer_cycle_input_dim(weights_dir, labeled_dir):
 
 
 def load_pretrained_abs_init(init_abs_path, device):
-    """加载 GMA 预训练导出的 A/B/S 原型并转换为 385 维初始化向量。"""
+    """加载 GMA 预训练导出的 A/B/S 原型并转换为 2048 维初始化向量。"""
     if not init_abs_path.exists():
         logging.warning(f'ABS init file not found: {init_abs_path}. Fallback to random noise.')
         return None
 
     data = torch.load(init_abs_path, map_location=device)
-    if 'init_vec' in data:
+    if 'weight_W' in data:
+        init_vec = data['weight_W'].float().view(-1)
+    elif 'init_vec' in data and data['init_vec'].numel() == W_DIM:
         init_vec = data['init_vec'].float().view(-1)
     elif 'param_A' in data and 'param_B' in data and 'param_log_s' in data:
-        init_vec = torch.cat([
-            data['param_A'].float().view(-1),
-            data['param_B'].float().view(-1),
-            data['param_log_s'].float().view(-1),
-        ])
+        p_A = data['param_A'].float()
+        p_B = data['param_B'].float()
+        p_log_s = data['param_log_s'].float().view(1)
+        scale = torch.exp(torch.clamp(p_log_s, min=-5.0, max=5.0)).view(1, 1)
+        init_vec = (scale * torch.matmul(p_A, p_B)).contiguous().view(-1)
     else:
         logging.warning(f'Invalid ABS init format: {init_abs_path}. Fallback to random noise.')
         return None
 
-    if init_vec.numel() != 385:
-        logging.warning(f'ABS init size mismatch ({init_vec.numel()}). Expected 385. Fallback to random noise.')
+    if init_vec.numel() != W_DIM:
+        logging.warning(f'ABS init size mismatch ({init_vec.numel()}). Expected {W_DIM}. Fallback to random noise.')
         return None
 
     return init_vec.to(device)
-
 # ==========================================
 # 1. 扩散采样器 (用于测试时的 Reverse Process)
 # ==========================================
@@ -79,14 +82,14 @@ class DiffusionSampler:
             model: 训练好的 WeightDenoiser
             feat_g, feat_l: 提取好的全局和局部特征 [1, Seq, 64]
         返回: 
-            归一化空间的展平权重向量 [1, 385]
+            归一化空间的展平权重向量 [1, 2048]
         """
         model.eval()
         # 逆扩散起点：优先使用预训练 GMA 的 A/B/S 原型向量，否则回退随机噪声
         if init_vec is not None:
             cur_x = init_vec.to(self.device).view(1, -1)
         else:
-            cur_x = torch.randn((1, 385), device=self.device)
+            cur_x = torch.randn((1, W_DIM), device=self.device)
         
         for i in reversed(range(self.T)):
             t = torch.full((1,), i, device=self.device, dtype=torch.long)
@@ -119,7 +122,7 @@ class FlowMatchingSampler:
     def sample(self, model, feat_g, feat_l, init_vec=None):
         model.eval()
         if init_vec is None:
-            cur_x = torch.randn((1, 385), device=self.device)
+            cur_x = torch.randn((1, W_DIM), device=self.device)
         else:
             cur_x = init_vec.view(1, -1)
         dt = 1.0 / max(self.T, 1)
@@ -192,25 +195,18 @@ def run_diffusion_end2end_evaluation(base_model, denoiser, sampler, stats, weigh
                 feat_g = g_cyc.unsqueeze(0).float()
                 feat_l = l_cyc.unsqueeze(0).float()
                 
-                # B. 采样生成标准化向量 (1, 385)
+                # B. 采样生成标准化向量 (1, 2048)
                 gen_vec_norm = sampler.sample(denoiser, feat_g, feat_l, init_vec=init_vec_norm)
-                
+
                 # C. 反标准化 (回到真实物理量级)
                 gen_vec = gen_vec_norm * t_std + t_mean
-                
-                # D. 拆解参数: A(4*64=256), B(4*32=128), log_s(1)
-                # A: 64*4 = 256, B: 4*32 = 128
-                p_A = gen_vec[:, 0:256].view(1, 64, 4)  # 对应 apply_lora 里的形状
-                p_B = gen_vec[:, 256:384].view(1, 4, 32)
-                p_log_s = torch.clamp(gen_vec[:, 384:385], min=-args.log_s_clip, max=args.log_s_clip)
-                
-                # E. 注入 LoRA 权重预测 SOH
+
+                # D. 直接使用 W 注入预测 SOH
                 feat_w = base_model.encoder(w_cyc)
-                p_A_batch = p_A.repeat(feat_w.size(0), 1, 1)
-                p_B_batch = p_B.repeat(feat_w.size(0), 1, 1)
-                p_log_s_batch = p_log_s.repeat(feat_w.size(0), 1)
-                
-                pred_soh = base_model.apply_lora(feat_w, p_A_batch, p_B_batch, p_log_s_batch)
+                p_W = gen_vec.view(1, 64, 32)
+                p_W_batch = p_W.repeat(feat_w.size(0), 1, 1)
+                aligned = torch.bmm(feat_w.unsqueeze(1), p_W_batch).squeeze(1)
+                pred_soh = base_model.head(aligned)
                 pred_soh = pred_soh.cpu().numpy().flatten()
 
             # --- 4. 误差计算 ---
@@ -308,7 +304,7 @@ if __name__ == "__main__":
     # 2. Denoiser (Diffusion or Flow Matching)
     denoiser_cls = WeightDenoiser if args.denoiser_type == "diff" else FlowMatchingDenoiser
     cond_input_dim = infer_cycle_input_dim(weights_dir, labeled_dir)
-    denoiser = denoiser_cls(weight_dim=385, hidden_dim=args.denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
+    denoiser = denoiser_cls(weight_dim=W_DIM, hidden_dim=args.denoiser_hidden_dim, cond_input_dim=cond_input_dim).to(device)
     denoiser.load_state_dict(torch.load(diffusion_model_path, map_location=device))
     
     # 3. Z-Score Stats

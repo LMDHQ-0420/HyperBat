@@ -11,3 +11,6 @@ __pycache__/
 
 # 编辑器配置
 .vscode/
+
+# pkl文件太大
+models/diffusion/

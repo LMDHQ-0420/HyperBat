@@ -229,7 +229,7 @@ class AdvancedHyperGen(nn.Module):
 class WeightDenoiser(nn.Module):
     """当前主线的条件去噪网络（Diff / Flow 共用）：
     输入：
-    - x_t: [B, 385]      当前噪声状态/中间状态
+    - x_t: [B, 2048]      当前噪声状态/中间状态
     - t: [B]             时间步（Diff 离散, Flow 连续）
     - global_feats: [B, G, 64]
     - local_feats: [B, L, 64]
@@ -243,7 +243,7 @@ class WeightDenoiser(nn.Module):
     注意：同一个 WeightDenoiser 会在每个 step 被重复调用，参数跨 step 共享。
     """
 
-    def __init__(self, weight_dim=385, hidden_dim=512, nhead=8, dropout=0.1, cond_input_dim=100):
+    def __init__(self, weight_dim=2048, hidden_dim=512, nhead=8, dropout=0.1, cond_input_dim=100):
         super().__init__()
 
         # 1) 时间步嵌入 MLP
@@ -296,7 +296,7 @@ class WeightDenoiser(nn.Module):
             dropout=dropout,
         )
 
-        # 5) 输出回归到 385 维参数空间
+        # 5) 输出回归到 2048 维 W 参数空间
         self.output_proj = nn.Linear(hidden_dim, weight_dim)
 
     def forward(self, x_t, t, global_feats, local_feats):

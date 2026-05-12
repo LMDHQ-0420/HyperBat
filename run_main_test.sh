@@ -23,9 +23,9 @@ types=(diff flow)
 
 error_log="${run_log_dir}/errors_diff_flow_l40_g200.txt"
 
-for denoiser_type in "${types[@]}"; do
-    for step in "${steps[@]}"; do
-        for dim in "${dims[@]}"; do
+for dim in "${dims[@]}"; do
+    for denoiser_type in "${types[@]}"; do
+        for step in "${steps[@]}"; do
             echo "Running type=${denoiser_type}, local=${local_cycles}, global=${global_cycles}, steps=${step}, dim=${dim}"
 
             train_log="${run_log_dir}/05_${denoiser_type}_l${local_cycles}_g${global_cycles}_s${step}_d${dim}_w${window_size}_s${stride}.txt"

@@ -1,2 +1,0 @@
-Evaluation failed for l=5, g=20, steps=20
-Training failed for l=5, g=20, steps=30
