@@ -83,8 +83,6 @@ def slide_cycle(battery, slide, window_size, stride):
 def combined_loss(preds, targets, param_A, param_B, 
                   lambda_smooth=0.01,    # 时间平滑：相邻窗口不要突变
                   lambda_soh=0.01,       # 状态一致：相似SOH的权重靠近 (建议调小点，给流动留空间)
-                  lambda_reg=1e-2,       # L2正则：控制数值范围在合理区间 (防止-100~100)
-                  lambda_orth=0.1,       # 正交惩罚：提高信息密度，固定参数含义
                   lambda_dir=0.05,       # 退化斜率：强迫所有电池向同一个方向“流动”
                   sigma_soh=0.005):      # SOH核带宽：收窄以提高局部灵敏度
     """
@@ -99,7 +97,6 @@ def combined_loss(preds, targets, param_A, param_B,
     # 2. 计算当前权重矩阵 W: [num_wins, 64, 32]
     W_curr = torch.bmm(param_A, param_B)
     num_wins = W_curr.size(0)
-    device = W_curr.device
 
     # 3. 时间平滑损失 (L_smooth)
     l_smooth = 0
@@ -117,62 +114,57 @@ def combined_loss(preds, targets, param_A, param_B,
         dist_W = torch.cdist(W_flat, W_flat, p=2)**2
         l_soh = torch.mean(K_soh * dist_W)
 
-    # 5. 【新增】退化斜率约束 (L_direction)
-    # 目的：让 dW/dSOH 的向量在所有窗口间尽量一致
+    # 5. 退化斜率约束 (L_direction)
     l_direction = 0
     if num_wins > 1:
-        delta_W = W_curr[1:] - W_curr[:-1]  # [num_wins-1, 64, 32]
-        # 计算 SOH 的变化量，注意加 epsilon 防止除以 0
+        delta_W = W_curr[1:] - W_curr[:-1]
         delta_SOH = (soh_centers[1:] - soh_centers[:-1]).view(-1, 1, 1)
-        # 计算斜率向量：单位 SOH 变化引起的 W 变化
-        W_slope = delta_W / (delta_SOH + 1e-6) 
-        # 约束：所有步长的斜率向量与其平均斜率的差异（即减小斜率的方差）
-        # 这样会强迫所有电池在参数空间内沿平行线移动
+        W_slope = delta_W / (delta_SOH + 1e-6)
         avg_slope = torch.mean(W_slope, dim=0, keepdim=True)
         l_direction = torch.mean((W_slope - avg_slope)**2)
 
-    # 6. 【新增】正交化惩罚 (L_orth)
-    # 目的：防止参数冗余，确保 rank 个维度各司其职
-    rank = param_A.size(-1)
-    I = torch.eye(rank, device=device).unsqueeze(0)
-    # A 的列正交: A^T @ A ≈ I
-    l_orth_A = torch.mean((torch.bmm(param_A.transpose(1, 2), param_A) - I)**2)
-    # B 的行正交: B @ B^T ≈ I
-    l_orth_B = torch.mean((torch.bmm(param_B, param_B.transpose(1, 2)) - I)**2)
-    l_orth = l_orth_A + l_orth_B
-
-    # 7. 强化正则项 (L_reg)
-    l_reg = torch.mean(param_A**2) + torch.mean(param_B**2)
-
-    # 总损失组合
-    total_loss = l_pred + \
-                 lambda_smooth * l_smooth + \
-                 lambda_soh * l_soh + \
-                 lambda_reg * l_reg + \
-                 lambda_orth * l_orth + \
-                 lambda_dir * l_direction
+    total_loss = (l_pred +
+                  lambda_smooth * l_smooth +
+                  lambda_soh * l_soh +
+                  lambda_dir * l_direction)
 
     return total_loss
 
 
-def canonicalize_lora(param_A, param_B, eps=1e-8):
+
+def canonicalize_W_by_svd(W: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     """
-    将 A/B 规范化并提取 log_s，减少尺度不确定性。
-    同时做简单符号对齐，降低等价分解带来的标签抖动。
+    对整个 W 做 SVD 规范化，消除奇异向量顺序和符号歧义。
+    W: shape (64, 32) 或 (batch, 64, 32)
     """
-    norm_A = torch.norm(param_A, p="fro")
-    norm_B = torch.norm(param_B, p="fro")
+    original_shape = W.shape
+    if W.dim() == 2:
+        W = W.unsqueeze(0)
 
-    A_norm = param_A / (norm_A + eps)
-    B_norm = param_B / (norm_B + eps)
-    log_s = torch.log(norm_A * norm_B + eps).view(1)
+    W_norm_list = []
+    for i in range(W.shape[0]):
+        w = W[i]
+        U, S, Vt = torch.linalg.svd(w, full_matrices=False)
+        idx = torch.argsort(S, descending=True)
+        U = U[:, idx]
+        S = S[idx]
+        Vt = Vt[idx, :]
 
-    sign = torch.sign(A_norm.sum(dim=0))
-    sign[sign == 0] = 1.0
-    A_norm = A_norm * sign.view(1, -1)
-    B_norm = B_norm * sign.view(-1, 1)
+        for j in range(U.shape[1]):
+            col = U[:, j]
+            max_abs_idx = torch.argmax(torch.abs(col))
+            if col[max_abs_idx] < 0:
+                U[:, j] = -U[:, j]
+                Vt[j, :] = -Vt[j, :]
 
-    return A_norm, B_norm, log_s
+        w_norm = U @ torch.diag(S) @ Vt
+        W_norm_list.append(w_norm)
+
+    W_norm = torch.stack(W_norm_list, dim=0)
+    if len(original_shape) == 2:
+        W_norm = W_norm.squeeze(0)
+    return W_norm
+
 
 def train(windows, model, device, sub_weights_dir, battery_id, num_restarts=300):
     """
@@ -263,18 +255,17 @@ def train(windows, model, device, sub_weights_dir, battery_id, num_restarts=300)
         if counter >= patience:
             break
 
-    # 4. 保存每个窗口的结果：仅保存 A/B/log_s
+    # 4. 保存每个窗口的结果：直接保存规范化后的 W
     for i in range(num_wins):
         start_idx = windows[i]['start_idx']
         save_path = sub_weights_dir / f'{battery_id}_{start_idx}.pkl'
 
-        A_norm, B_norm, log_s = canonicalize_lora(best_A[i], best_B[i])
+        W = torch.matmul(best_A[i], best_B[i])
+        W_norm = canonicalize_W_by_svd(W)
 
         torch.save({
             'start_idx': start_idx,
-            'param_A': A_norm.cpu(),
-            'param_B': B_norm.cpu(),
-            'param_log_s': log_s.cpu()
+            'weight_W': W_norm.cpu(),
         }, save_path)
     
     return best_A, best_B
@@ -285,18 +276,17 @@ def train(windows, model, device, sub_weights_dir, battery_id, num_restarts=300)
 # -----------------------------------------------------------------------------
 def test(weight_path, model, device, battery, slide, start_idx, window_size, test_result_path):
     """
-    推理时优先使用 A/B/log_s 还原权重，兼容历史 weight_W。
+    推理时直接使用保存的 weight_W。
     """
     
     # 1. 加载合成后的权重 W [64, 32]
     # ---------------------------------------------------------
     weights = torch.load(weight_path, map_location=device)
     
-    p_A = weights['param_A'].to(device).float()
-    p_B = weights['param_B'].to(device).float()
-    p_log_s = weights.get('param_log_s', torch.zeros(1)).to(device).float().view(1)
-    scale = torch.exp(torch.clamp(p_log_s, min=-5.0, max=5.0)).view(1, 1)
-    W = scale * torch.matmul(p_A, p_B)
+    if 'weight_W' in weights:
+        W = weights['weight_W'].to(device).float()
+    else:
+        raise KeyError(f"weight_W not found in {weight_path}")
     
     # 2. 准备数据
     # ---------------------------------------------------------
@@ -390,7 +380,7 @@ if __name__ == "__main__":
     labeled_dir = Path(config.path.labeled_dir)
     results_dir = Path(config.path.create_weights_results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
-    pretrained_path = Path(config.path.models_dir) / 'GMA-NET.pkl'
+    pretrained_path = Path(config.path.gma_models_dir) / 'GMA-NET.pkl'
     if not slide:
         weights_dir = Path(config.path.weights_dir) / 'full'
         result_file_name = 'GMANet_full_test'
