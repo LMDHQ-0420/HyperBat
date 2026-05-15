@@ -529,13 +529,32 @@ def train_diffusion(
                 pred_x0 = anchor_vec + (z_t - anchor_vec - sqrt_one_minus_ab_t * predicted_signal) / (sqrt_ab_t + 1e-8)
             else:
                 base_sample = init_vec_norm.expand(target_vec.shape[0], -1)
-                t = torch.rand(target_vec.shape[0], device=device).clamp(1e-4, 1.0 - 1e-4)
+                # Flow Matching: 修复数值不稳定性
+                # 问题: 时间值 t ∈ [1e-4, 1.0-1e-4] 导致时间嵌入计算爆炸
+                # 方案: (1) 缩小时间范围, (2) 归一化速度场防止梯度爆炸, (3) 添加中间值clamping
+                t = torch.rand(target_vec.shape[0], device=device).clamp(0.01, 0.99)
                 t_view = t.view(-1, 1)
                 z_t = (1.0 - t_view) * base_sample + t_view * target_vec
+                z_t = torch.clamp(z_t, -5.0, 5.0)
+                
                 target_flow = target_vec - base_sample
+                # 对速度场进行归一化以稳定梯度流
+                target_flow_norm = torch.norm(target_flow, dim=-1, keepdim=True).clamp(min=1e-6)
+                target_flow_norm = torch.clamp(target_flow_norm, max=5.0)  # 防止过大的缩放
+                target_flow_normalized = target_flow / target_flow_norm
+                
                 predicted_signal = model(z_t, t, feat_g, feat_l)
-                base_loss = F.mse_loss(predicted_signal, target_flow)
+                # 对预测的速度场做同样处理
+                pred_signal_norm = torch.norm(predicted_signal, dim=-1, keepdim=True).clamp(min=1e-6)
+                pred_signal_norm = torch.clamp(pred_signal_norm, max=5.0)
+                predicted_signal_normalized = predicted_signal / pred_signal_norm
+                
+                # 在归一化空间计算loss
+                base_loss = F.mse_loss(predicted_signal_normalized, target_flow_normalized)
+                
+                # x0 恢复仍使用原始预测
                 pred_x0 = z_t + (1.0 - t_view) * predicted_signal
+                pred_x0 = torch.clamp(pred_x0, -5.0, 5.0)
 
             # 反归一化得到物理空间 W
             pred_x0_raw = pred_x0 * target_std + target_mean

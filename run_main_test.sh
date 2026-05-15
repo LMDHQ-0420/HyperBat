@@ -19,7 +19,7 @@ steps=(1 40)
 dims=(256 512)
 
 # 同时测试两种 denoiser
-types=(diff flow)
+types=(flow)
 
 error_log="${run_log_dir}/errors_diff_flow_l40_g200.txt"
 
