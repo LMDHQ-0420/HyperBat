@@ -260,9 +260,9 @@ def train_diffusion(
         raise ValueError("GMA init vector is required.")
     init_vec_norm = ((init_vec.to(device).view(1, -1) - target_mean.view(1, -1)) / (target_std.view(1, -1) + 1e-8))
     
-    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-5)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=50
+    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=50, T_mult=2, eta_min=1e-6
     )
     
     best_loss = float('inf')
@@ -328,7 +328,7 @@ def train_diffusion(
             epoch_loss += loss.item()
 
         avg_loss = epoch_loss / len(train_loader)
-        scheduler.step(avg_loss)
+        scheduler.step(epoch + 1)
         # 更新 best_loss 与计数器
         if avg_loss < best_loss:
             best_loss = avg_loss
@@ -340,8 +340,8 @@ def train_diffusion(
             plateau_counter += 1
             early_stop_counter += 1
         # 早停
-        if early_stop_counter >= 300:
-            logging.info('Early stopping triggered after 300 epochs without improvement.')
+        if early_stop_counter >= 100:
+            logging.info('Early stopping triggered after 100 epochs without improvement.')
             break
 
         logging.info(f"Epoch {epoch+1} | Loss: {avg_loss:.6f} | LR: {optimizer.param_groups[0]['lr']:.2e} | "

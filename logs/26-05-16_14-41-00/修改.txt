@@ -1,0 +1,4 @@
+优化器权重衰减从 1e-5 提到 1e-4。
+学习率调度器从 ReduceLROnPlateau 换成 CosineAnnealingWarmRestarts，当前设置是 T_0=50，T_mult=2，eta_min=1e-6。
+训练里不再用 scheduler.step(avg_loss)，而是每个 epoch 用 scheduler.step(epoch + 1) 推进余弦周期。
+早停从 300 改成 100，日志提示也一并改了，位置在 05_train_WeightDenoiser.py:343。
